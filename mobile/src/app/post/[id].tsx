@@ -27,12 +27,14 @@ import { useToggleLike } from '@/hooks/useToggleLike';
 import { useAuth } from '@/hooks/useAuth';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
+import { useSafeBack } from '@/hooks/useSafeBack';
 
 const MAX_COMMENT_LENGTH = 500;
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const goBack = useSafeBack('/(tabs)');
   const [commentText, setCommentText] = useState('');
   const { isPreviewMode } = usePreview();
   const { toggleLike } = useToggleLike();
@@ -277,7 +279,7 @@ export default function PostDetailScreen() {
           <IconButton
             icon="arrow-back"
             accessibilityLabel="Go back"
-            onPress={() => router.back()}
+            onPress={goBack}
           />
         }
       />

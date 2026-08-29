@@ -1,3 +1,4 @@
+import { PREVIEW_TEAM_NAME, APP_NAME } from '@/constants/branding';
 import { Post } from '@/services/post.service';
 import { Comment } from '@/services/comment.service';
 import { UserProfile } from '@/services/user.service';
@@ -17,10 +18,10 @@ export const PREVIEW_POSTS: Post[] = [
   {
     _id: 'preview-1',
     content:
-      'Welcome to Nexus Social! This is a preview post so you can inspect the feed UI before backend integration.',
+      `Welcome to ${APP_NAME}! This is a preview post so you can inspect the feed UI before backend integration.`,
     author: {
       _id: 'user-1',
-      name: 'Nexus Team',
+      name: PREVIEW_TEAM_NAME,
       username: 'nexus',
     },
     likesCount: 12,
@@ -97,7 +98,7 @@ const PREVIEW_COMMENTS_BY_POST: Record<string, Comment[]> = {
       content: 'Love the glass effect on the cards!',
       author: {
         _id: 'user-1',
-        name: 'Nexus Team',
+        name: PREVIEW_TEAM_NAME,
         username: 'nexus',
       },
       createdAt: hoursAgo(3),
@@ -129,8 +130,8 @@ export const PREVIEW_NOTIFICATIONS: PreviewNotification[] = [
   },
   {
     id: 'notif-4',
-    title: 'Nexus Team',
-    body: 'Welcome to Nexus Social! Start by creating your first post.',
+    title: PREVIEW_TEAM_NAME,
+    body: `Welcome to ${APP_NAME}! Start by creating your first post.`,
     timestamp: daysAgo(2),
     read: true,
   },
@@ -147,7 +148,7 @@ export function getPreviewComments(postId: string): Comment[] {
 export const PREVIEW_USERS: Record<string, UserProfile> = {
   nexus: {
     _id: 'user-1',
-    name: 'Nexus Team',
+    name: PREVIEW_TEAM_NAME,
     username: 'nexus',
     bio: 'Building the future of social connection.',
     createdAt: daysAgo(365),

@@ -7,6 +7,7 @@ import { AccountMenu } from '@/components/navigation/AccountMenu';
 import { colors } from '@/theme/colors';
 import { glass, layout } from '@/theme/glass';
 import { spacing } from '@/theme/spacing';
+import { APP_NAME } from '@/constants/branding';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
 
@@ -50,7 +51,7 @@ export function DesktopSidebar() {
   return (
     <View style={styles.sidebar}>
       <Typography variant="screenTitle" style={styles.brand}>
-        Nexus Social
+        {APP_NAME}
       </Typography>
 
       <View style={styles.nav}>

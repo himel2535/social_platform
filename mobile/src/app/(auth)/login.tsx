@@ -15,6 +15,7 @@ import { usePreview } from '@/preview';
 import { useAuth } from '@/hooks/useAuth';
 import { ApiError } from '@/services/api';
 import { validateLogin } from '@/utils/authValidation';
+import { APP_NAME } from '@/constants/branding';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 
 export default function LoginScreen() {
@@ -61,7 +62,7 @@ export default function LoginScreen() {
       <KeyboardAwareContainer contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <Typography variant="screenTitle">Welcome back</Typography>
-          <Typography variant="metadata">Sign in to Nexus Social</Typography>
+          <Typography variant="metadata">Sign in to {APP_NAME}</Typography>
         </View>
 
         <View style={styles.form}>

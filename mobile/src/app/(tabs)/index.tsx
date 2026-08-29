@@ -18,6 +18,8 @@ import { Post, Pagination, postService } from '@/services/post.service';
 import { usePreview, PREVIEW_POSTS } from '@/preview';
 import { useAuth } from '@/hooks/useAuth';
 import { AccountMenu } from '@/components/navigation/AccountMenu';
+import { APP_NAME } from '@/constants/branding';
+import { useResponsive } from '@/hooks/useResponsive';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 import { cachePosts } from '@/utils/postCache';
@@ -40,6 +42,7 @@ export default function FeedScreen() {
   const [search, setSearch] = useState('');
   const { isPreviewMode } = usePreview();
   const { isAuthenticated } = useAuth();
+  const { isDesktop } = useResponsive();
   const router = useRouter();
 
   const [previewPosts, setPreviewPosts] = useState<Post[]>(PREVIEW_POSTS);
@@ -256,15 +259,21 @@ export default function FeedScreen() {
       }}
     >
       <AppHeader
-        title="Nexus Social"
+        title={APP_NAME}
         rightAction={
-          <View style={styles.headerActions}>
-            {(isAuthenticated || isPreviewMode) ? <AccountMenu size={32} /> : null}
-            <View>
-              <IconButton icon="notifications-outline" accessibilityLabel="Notifications" />
-              <Badge dot style={styles.badge} />
+          !isDesktop && (isAuthenticated || isPreviewMode) ? (
+            <View style={styles.headerActions}>
+              <View>
+                <IconButton
+                  icon="notifications-outline"
+                  accessibilityLabel="Notifications"
+                  onPress={() => router.push('/(tabs)/notifications')}
+                />
+                <Badge dot style={styles.badge} />
+              </View>
+              <AccountMenu size={32} />
             </View>
-          </View>
+          ) : undefined
         }
       />
 
@@ -284,6 +293,7 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
   },
   badge: {
     position: 'absolute',

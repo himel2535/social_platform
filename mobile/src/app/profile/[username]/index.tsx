@@ -24,6 +24,7 @@ import { Post } from '@/services/post.service';
 import { useToggleFollow } from '@/hooks/useToggleFollow';
 import { useToggleLike } from '@/hooks/useToggleLike';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useSafeBack } from '@/hooks/useSafeBack';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 
@@ -46,6 +47,8 @@ export default function ProfileScreen() {
   const { followUser } = useToggleFollow();
   const { toggleLike } = useToggleLike();
   const { isDesktop } = useResponsive();
+  const goBack = useSafeBack('/(tabs)');
+  const canGoBack = router.canGoBack();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -150,11 +153,13 @@ export default function ProfileScreen() {
       <AppHeader
         title="Profile"
         leftAction={
-          <IconButton
-            icon="arrow-back"
-            accessibilityLabel="Go back"
-            onPress={() => router.back()}
-          />
+          canGoBack ? (
+            <IconButton
+              icon="arrow-back"
+              accessibilityLabel="Go back"
+              onPress={goBack}
+            />
+          ) : undefined
         }
       />
 

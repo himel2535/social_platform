@@ -16,6 +16,7 @@ import { usePreview, searchPreviewUsers } from '@/preview';
 import { userService, UserProfile } from '@/services/user.service';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
+import { useSafeBack } from '@/hooks/useSafeBack';
 
 const DEBOUNCE_MS = 300;
 
@@ -25,6 +26,7 @@ type Props = {
 
 export function UserSearchScreen({ showBackButton = false }: Props) {
   const router = useRouter();
+  const goBack = useSafeBack('/(tabs)');
   const { isPreviewMode } = usePreview();
 
   const [query, setQuery] = useState('');
@@ -94,7 +96,7 @@ export function UserSearchScreen({ showBackButton = false }: Props) {
             <IconButton
               icon="arrow-back"
               accessibilityLabel="Go back"
-              onPress={() => router.back()}
+              onPress={goBack}
             />
           ) : undefined
         }

@@ -7,6 +7,7 @@ import { usePreview } from '@/preview';
 import { spacing } from '@/theme/spacing';
 import { colors } from '@/theme/colors';
 import { glass } from '@/theme/glass';
+import { PREVIEW_TEAM_NAME } from '@/constants/branding';
 
 type Props = {
   size?: number;
@@ -18,7 +19,7 @@ export function AccountMenu({ size = 36 }: Props) {
   const { isPreviewMode, exitPreview } = usePreview();
   const [open, setOpen] = useState(false);
 
-  const displayName = isPreviewMode ? 'Nexus Team' : user?.name || 'Account';
+  const displayName = isPreviewMode ? PREVIEW_TEAM_NAME : user?.name || 'Account';
   const displayUsername = isPreviewMode ? 'nexus' : user?.username || '';
   const avatarUri = isPreviewMode ? undefined : user?.avatar;
 

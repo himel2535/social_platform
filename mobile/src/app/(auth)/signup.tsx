@@ -15,6 +15,7 @@ import { usePreview } from '@/preview';
 import { useAuth } from '@/hooks/useAuth';
 import { ApiError } from '@/services/api';
 import { validateSignup } from '@/utils/authValidation';
+import { APP_NAME } from '@/constants/branding';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 
 export default function SignupScreen() {
@@ -67,7 +68,7 @@ export default function SignupScreen() {
     <Screen scroll={false}>
       <KeyboardAwareContainer contentContainerStyle={styles.container}>
         <View style={styles.header}>
-          <Typography variant="screenTitle">Join Nexus Social</Typography>
+          <Typography variant="screenTitle">Join {APP_NAME}</Typography>
           <Typography variant="metadata">Create your account to get started</Typography>
         </View>
 

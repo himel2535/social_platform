@@ -16,12 +16,14 @@ import { userService, UserProfile } from '@/services/user.service';
 import { Pagination } from '@/services/post.service';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
+import { useSafeBack } from '@/hooks/useSafeBack';
 
 const PAGE_LIMIT = 20;
 
 export default function FollowersScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const router = useRouter();
+  const goBack = useSafeBack('/(tabs)');
   const { isPreviewMode } = usePreview();
 
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -112,7 +114,7 @@ export default function FollowersScreen() {
           <IconButton
             icon="arrow-back"
             accessibilityLabel="Go back"
-            onPress={() => router.back()}
+            onPress={goBack}
           />
         }
       />

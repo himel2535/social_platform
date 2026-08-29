@@ -1,5 +1,7 @@
 # Mini Social Feed App
 
+**Product name:** TechZugram
+
 ## Overview
 
 A lightweight social media application where users can sign up, log in, create text-only posts, view a shared feed, like/unlike posts, comment on posts, filter the feed by username, and receive real-time push notifications via Firebase Cloud Messaging.

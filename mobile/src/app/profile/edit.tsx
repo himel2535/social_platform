@@ -15,11 +15,13 @@ import { useToast } from '@/components/ui';
 import { userService } from '@/services/user.service';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
+import { useSafeBack } from '@/hooks/useSafeBack';
 
 const BIO_MAX_LENGTH = 160;
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const goBack = useSafeBack('/(tabs)');
   const { user, updateUser } = useAuth();
   const { showToast } = useToast();
 
@@ -125,7 +127,7 @@ export default function EditProfileScreen() {
       });
 
       showToast('Profile updated successfully', 'success');
-      router.back();
+      goBack();
     } catch (err) {
       showToast(normalizeApiError(err as ApiError, 'general'), 'error');
     } finally {
@@ -141,7 +143,7 @@ export default function EditProfileScreen() {
           <IconButton
             icon="arrow-back"
             accessibilityLabel="Go back"
-            onPress={() => router.back()}
+            onPress={goBack}
           />
         }
       />
