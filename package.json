@@ -1,0 +1,12 @@
+{
+  "name": "mini-social-feed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mini Social Feed App - Monorepo",
+  "scripts": {
+    "backend:dev": "npm run dev --prefix backend",
+    "backend:start": "npm start --prefix backend",
+    "mobile:start": "npm start --prefix mobile",
+    "mobile:android": "npm run android --prefix mobile"
+  }
+}
