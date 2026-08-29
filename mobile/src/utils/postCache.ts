@@ -25,6 +25,13 @@ export function updateCachedPostLike(
   }
 }
 
+export function updateCachedPostCommentsCount(postId: string, commentsCount: number): void {
+  const cached = cache.get(postId);
+  if (cached) {
+    cache.set(postId, { ...cached, commentsCount });
+  }
+}
+
 export function clearPostCache(): void {
   cache.clear();
 }

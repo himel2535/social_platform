@@ -355,6 +355,146 @@ Duplicate unlike requests are safe and idempotent.
 - `:id` must be a valid MongoDB ObjectId (400 if malformed)
 - Post must exist (404 if not found)
 
+## Comments Endpoints
+
+All comment endpoints require authentication:
+
+```
+Authorization: Bearer <token>
+```
+
+Feed posts include `commentsCount` reflecting the stored count on each post.
+
+### GET /api/posts/:id/comments
+
+Retrieve paginated comments for a post, newest first.
+
+**Query parameters:**
+
+| Parameter | Default | Max | Description |
+|-----------|---------|-----|-------------|
+| `page` | `1` | — | Page number (positive integer) |
+| `limit` | `20` | `50` | Comments per page |
+
+**Example:**
+
+```bash
+curl "http://localhost:5000/api/posts/POST_ID/comments?page=1&limit=20" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Comments retrieved successfully",
+  "data": {
+    "comments": [
+      {
+        "_id": "...",
+        "content": "This is a comment",
+        "author": {
+          "_id": "...",
+          "name": "John Doe",
+          "username": "johndoe",
+          "avatar": null
+        },
+        "createdAt": "...",
+        "updatedAt": "..."
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 1,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+### POST /api/posts/:id/comments
+
+Add a comment to a post. The authenticated user is always set as the author.
+
+**Request:**
+
+```json
+{
+  "content": "This is a comment"
+}
+```
+
+**Validation rules:**
+
+- `content`: required, string, trimmed, 1–500 characters
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:5000/api/posts/POST_ID/comments \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"This is a comment"}'
+```
+
+**Success response (201):**
+
+```json
+{
+  "success": true,
+  "message": "Comment added successfully",
+  "data": {
+    "comment": {
+      "_id": "...",
+      "content": "This is a comment",
+      "author": {
+        "_id": "...",
+        "name": "John Doe",
+        "username": "johndoe",
+        "avatar": null
+      },
+      "createdAt": "...",
+      "updatedAt": "..."
+    },
+    "commentsCount": 1
+  }
+}
+```
+
+### DELETE /api/comments/:id
+
+Delete a comment. Only the comment author can delete their own comment.
+
+**Example:**
+
+```bash
+curl -X DELETE http://localhost:5000/api/comments/COMMENT_ID \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Comment deleted successfully",
+  "data": {
+    "commentsCount": 0
+  }
+}
+```
+
+**Authorization:**
+
+- Comment author → 200
+- Other users → 403
+- Comment not found → 404
+- Invalid comment ID → 400
+
 ## Testing
 
 ```bash
@@ -365,7 +505,7 @@ npm test
 MONGODB_URI=mongodb://127.0.0.1:27017/social_platform_test npm test
 ```
 
-When MongoDB is unavailable, auth, posts, and likes integration tests are skipped automatically and the health/CORS tests still run.
+When MongoDB is unavailable, auth, posts, likes, and comments integration tests are skipped automatically and the health/CORS tests still run.
 
 ## Architecture
 
@@ -399,6 +539,9 @@ src/
 | GET | `/api/posts` | Yes | 4 |
 | POST | `/api/posts/:id/like` | Yes | 6 |
 | DELETE | `/api/posts/:id/like` | Yes | 6 |
+| GET | `/api/posts/:id/comments` | Yes | 7 |
+| POST | `/api/posts/:id/comments` | Yes | 7 |
+| DELETE | `/api/comments/:id` | Yes | 7 |
 
 ## Security
 

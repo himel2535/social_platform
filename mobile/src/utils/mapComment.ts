@@ -1,6 +1,6 @@
-import { Post, PostAuthor } from '@/services/post.service';
+import { Comment, CommentAuthor } from '@/services/comment.service';
 
-export type BackendPost = {
+export type BackendComment = {
   _id: string;
   content: string;
   author: {
@@ -9,14 +9,11 @@ export type BackendPost = {
     username: string;
     avatar: string | null;
   };
-  likesCount?: number;
-  likedByMe?: boolean;
-  commentsCount?: number;
   createdAt: string;
   updatedAt: string;
 };
 
-function mapAuthor(author: BackendPost['author']): PostAuthor {
+function mapAuthor(author: BackendComment['author']): CommentAuthor {
   return {
     _id: author._id,
     name: author.name,
@@ -25,14 +22,11 @@ function mapAuthor(author: BackendPost['author']): PostAuthor {
   };
 }
 
-export function mapApiPost(raw: BackendPost): Post {
+export function mapApiComment(raw: BackendComment): Comment {
   return {
     _id: raw._id,
     content: raw.content,
     author: mapAuthor(raw.author),
-    likesCount: raw.likesCount ?? 0,
-    commentsCount: raw.commentsCount ?? 0,
-    likedByMe: raw.likedByMe ?? false,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };

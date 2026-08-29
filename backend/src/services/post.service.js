@@ -24,6 +24,7 @@ const formatPost = (post, userId) => ({
   content: post.content,
   author: formatAuthor(post.author),
   likesCount: post.likesCount ?? 0,
+  commentsCount: post.commentsCount ?? 0,
   likedByMe: userId
     ? (post.likes || []).some((id) => id.toString() === userId.toString())
     : false,
@@ -41,7 +42,7 @@ const createPost = async (userId, content) => {
     .populate('author', AUTHOR_FIELDS)
     .lean();
 
-  return formatPost({ ...populated, likes: [], likesCount: 0 }, userId);
+  return formatPost({ ...populated, likes: [], likesCount: 0, commentsCount: 0 }, userId);
 };
 
 const getPosts = async ({ page = DEFAULT_PAGE, limit = DEFAULT_LIMIT, userId } = {}) => {
@@ -55,7 +56,7 @@ const getPosts = async ({ page = DEFAULT_PAGE, limit = DEFAULT_LIMIT, userId } =
       .skip(skip)
       .limit(safeLimit)
       .populate('author', AUTHOR_FIELDS)
-      .select('content author likes likesCount createdAt updatedAt')
+      .select('content author likes likesCount commentsCount createdAt updatedAt')
       .lean(),
     Post.countDocuments(),
   ]);
