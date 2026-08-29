@@ -9,6 +9,9 @@ export type UserProfile = {
   avatar?: string | null;
   bio?: string;
   createdAt?: string;
+  followersCount?: number;
+  followingCount?: number;
+  following?: boolean;
 };
 
 export type UpdateProfilePayload = {
@@ -20,6 +23,17 @@ export type UpdateProfilePayload = {
 export type UserSearchPagination = Pagination;
 
 export type UserSearchResult = {
+  users: UserProfile[];
+  pagination: UserSearchPagination;
+};
+
+export type FollowResponse = {
+  following: boolean;
+  followersCount: number;
+  followingCount: number;
+};
+
+export type UserListResult = {
   users: UserProfile[];
   pagination: UserSearchPagination;
 };
@@ -78,6 +92,32 @@ export const userService = {
         page,
         limit,
       },
+    });
+
+    return response.data.data;
+  },
+
+  async followUser(username: string): Promise<FollowResponse> {
+    const response = await api.post<BackendSuccess<FollowResponse>>(`/users/${username}/follow`);
+    return response.data.data;
+  },
+
+  async unfollowUser(username: string): Promise<FollowResponse> {
+    const response = await api.delete<BackendSuccess<FollowResponse>>(`/users/${username}/follow`);
+    return response.data.data;
+  },
+
+  async getFollowers(username: string, page = 1, limit = 20): Promise<UserListResult> {
+    const response = await api.get<BackendSuccess<UserListResult>>(`/users/${username}/followers`, {
+      params: { page, limit },
+    });
+
+    return response.data.data;
+  },
+
+  async getFollowing(username: string, page = 1, limit = 20): Promise<UserListResult> {
+    const response = await api.get<BackendSuccess<UserListResult>>(`/users/${username}/following`, {
+      params: { page, limit },
     });
 
     return response.data.data;

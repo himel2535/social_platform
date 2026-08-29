@@ -1,20 +1,22 @@
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
+const followService = require('./follow.service');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
-const formatPublicUser = (user) => ({
+const formatPublicUser = (user, extras = {}) => ({
   _id: user._id,
   name: user.name,
   username: user.username,
   avatar: user.avatar || null,
   bio: user.bio || '',
   createdAt: user.createdAt,
+  ...extras,
 });
 
-const formatOwnUser = (user) => ({
+const formatOwnUser = (user, extras = {}) => ({
   _id: user._id,
   name: user.name,
   username: user.username,
@@ -22,6 +24,7 @@ const formatOwnUser = (user) => ({
   avatar: user.avatar || null,
   bio: user.bio || '',
   createdAt: user.createdAt,
+  ...extras,
 });
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -33,10 +36,12 @@ const getMe = async (userId) => {
     throw new AppError('User not found', 404);
   }
 
-  return formatOwnUser(user);
+  const counts = await followService.getFollowCounts(userId);
+
+  return formatOwnUser(user, counts);
 };
 
-const getUserByUsername = async (username) => {
+const getUserByUsername = async (username, viewerId) => {
   const normalizedUsername = username.toLowerCase().trim();
   const user = await User.findOne({ username: normalizedUsername });
 
@@ -44,7 +49,17 @@ const getUserByUsername = async (username) => {
     throw new AppError('User not found', 404);
   }
 
-  return formatPublicUser(user);
+  const counts = await followService.getFollowCounts(user._id);
+  let following = false;
+
+  if (viewerId && viewerId.toString() !== user._id.toString()) {
+    following = await followService.isFollowing(viewerId, user._id);
+  }
+
+  return formatPublicUser(user, {
+    ...counts,
+    following,
+  });
 };
 
 const updateMyProfile = async (userId, updates) => {
@@ -70,7 +85,9 @@ const updateMyProfile = async (userId, updates) => {
     throw new AppError('User not found', 404);
   }
 
-  return formatOwnUser(user);
+  const counts = await followService.getFollowCounts(userId);
+
+  return formatOwnUser(user, counts);
 };
 
 const searchUsers = async ({ q, page = DEFAULT_PAGE, limit = DEFAULT_LIMIT }) => {
@@ -96,7 +113,7 @@ const searchUsers = async ({ q, page = DEFAULT_PAGE, limit = DEFAULT_LIMIT }) =>
   const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
 
   return {
-    users: users.map(formatPublicUser),
+    users: users.map((user) => formatPublicUser(user)),
     pagination: {
       page: safePage,
       limit: safeLimit,

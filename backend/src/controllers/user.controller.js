@@ -9,7 +9,7 @@ const getMe = asyncHandler(async (req, res) => {
 });
 
 const getUserByUsername = asyncHandler(async (req, res) => {
-  const user = await userService.getUserByUsername(req.params.username);
+  const user = await userService.getUserByUsername(req.params.username, req.user?._id);
 
   sendSuccess(res, 200, 'Profile retrieved successfully', { user });
 });

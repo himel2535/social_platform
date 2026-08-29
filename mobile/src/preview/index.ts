@@ -8,5 +8,9 @@ export {
   getPreviewComments,
   getPreviewUser,
   searchPreviewUsers,
+  getPreviewFollowState,
+  togglePreviewFollow,
+  getPreviewFollowers,
+  getPreviewFollowing,
 } from './mockData';
 export type { PreviewNotification } from './mockData';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Screen,
@@ -9,13 +9,16 @@ import {
   Typography,
   GlassCard,
   PrimaryButton,
+  SecondaryButton,
   LoadingSpinner,
   ErrorState,
 } from '@/components/ui';
 import { spacing } from '@/theme/spacing';
+import { formatCount } from '@/utils/format';
 import { useAuth } from '@/hooks/useAuth';
-import { usePreview, getPreviewUser } from '@/preview';
+import { usePreview, getPreviewUser, togglePreviewFollow } from '@/preview';
 import { userService, UserProfile } from '@/services/user.service';
+import { useToggleFollow } from '@/hooks/useToggleFollow';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 
@@ -35,6 +38,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user: currentUser } = useAuth();
   const { isPreviewMode } = usePreview();
+  const { followUser } = useToggleFollow();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +56,7 @@ export default function ProfileScreen() {
 
     try {
       if (isPreviewMode) {
-        const previewUser = getPreviewUser(username);
+        const previewUser = getPreviewUser(username, 'nexus');
         if (!previewUser) {
           setError('User not found');
           setProfile(null);
@@ -82,6 +86,22 @@ export default function ProfileScreen() {
       ? profile.username === 'nexus'
       : currentUser?.username === profile.username);
 
+  const handleFollowPress = async () => {
+    if (!profile || isOwnProfile) {
+      return;
+    }
+
+    if (isPreviewMode) {
+      const updated = togglePreviewFollow('nexus', profile.username);
+      if (updated) {
+        setProfile(updated);
+      }
+      return;
+    }
+
+    await followUser(profile, setProfile);
+  };
+
   return (
     <Screen scroll contentContainerStyle={styles.content}>
       <AppHeader
@@ -109,6 +129,27 @@ export default function ProfileScreen() {
             <Typography variant="username">@{profile.username}</Typography>
           </View>
 
+          <View style={styles.statsRow}>
+            <Pressable
+              style={styles.statItem}
+              onPress={() => router.push(`/profile/${profile.username}/followers`)}
+              accessibilityRole="button"
+              accessibilityLabel="View followers"
+            >
+              <Typography variant="userName">{formatCount(profile.followersCount ?? 0)}</Typography>
+              <Typography variant="metadata">Followers</Typography>
+            </Pressable>
+            <Pressable
+              style={styles.statItem}
+              onPress={() => router.push(`/profile/${profile.username}/following`)}
+              accessibilityRole="button"
+              accessibilityLabel="View following"
+            >
+              <Typography variant="userName">{formatCount(profile.followingCount ?? 0)}</Typography>
+              <Typography variant="metadata">Following</Typography>
+            </Pressable>
+          </View>
+
           {profile.bio ? (
             <Typography variant="postContent" style={styles.bio}>
               {profile.bio}
@@ -127,9 +168,17 @@ export default function ProfileScreen() {
             <PrimaryButton
               title="Edit Profile"
               onPress={() => router.push('/profile/edit')}
-              style={styles.editButton}
+              style={styles.actionButton}
             />
-          ) : null}
+          ) : (
+            <View style={styles.actionButton}>
+              {profile.following ? (
+                <SecondaryButton title="Following" onPress={handleFollowPress} />
+              ) : (
+                <PrimaryButton title="Follow" onPress={handleFollowPress} />
+              )}
+            </View>
+          )}
         </GlassCard>
       ) : null}
     </Screen>
@@ -155,6 +204,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     textAlign: 'center',
   },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    minWidth: 88,
+  },
   bio: {
     textAlign: 'center',
     marginBottom: spacing.md,
@@ -163,7 +223,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
-  editButton: {
+  actionButton: {
     marginTop: spacing.sm,
   },
 });

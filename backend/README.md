@@ -524,6 +524,8 @@ curl http://localhost:5000/api/users/me \
       "email": "john@example.com",
       "avatar": null,
       "bio": "",
+      "followersCount": 0,
+      "followingCount": 0,
       "createdAt": "..."
     }
   }
@@ -532,12 +534,19 @@ curl http://localhost:5000/api/users/me \
 
 ### GET /api/users/:username
 
-Return a public user profile by username. No authentication required.
+Return a public user profile by username. Authentication is optional — when a valid JWT is provided, the response includes whether the authenticated user follows this profile (`following`).
 
 **Example:**
 
 ```bash
 curl http://localhost:5000/api/users/johndoe
+```
+
+With authentication (includes `following` state):
+
+```bash
+curl http://localhost:5000/api/users/johndoe \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Success response (200):**
@@ -553,6 +562,8 @@ curl http://localhost:5000/api/users/johndoe
       "username": "johndoe",
       "avatar": null,
       "bio": "",
+      "followersCount": 0,
+      "followingCount": 0,
       "createdAt": "..."
     }
   }
@@ -643,8 +654,11 @@ curl "http://localhost:5000/api/users/search?q=john&page=1&limit=20" \
         "name": "John Doe",
         "username": "johndoe",
         "avatar": null,
-        "bio": "",
-        "createdAt": "..."
+      "bio": "",
+      "followersCount": 25,
+      "followingCount": 12,
+      "following": true,
+      "createdAt": "..."
       }
     ],
     "pagination": {
@@ -665,6 +679,135 @@ curl "http://localhost:5000/api/users/search?q=john&page=1&limit=20" \
 - `limit` above 50 → 400
 - Password, email, and other sensitive fields are never returned
 
+## Follow Endpoints
+
+All follow endpoints require authentication:
+
+```
+Authorization: Bearer <token>
+```
+
+### POST /api/users/:username/follow
+
+Follow a user by username.
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:5000/api/users/johndoe/follow \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "User followed successfully",
+  "data": {
+    "following": true,
+    "followersCount": 10,
+    "followingCount": 5
+  }
+}
+```
+
+**Notes:**
+
+- Cannot follow yourself → 400
+- Non-existent username → 404
+- Duplicate follow is handled safely (idempotent 200)
+
+### DELETE /api/users/:username/follow
+
+Unfollow a user by username.
+
+**Example:**
+
+```bash
+curl -X DELETE http://localhost:5000/api/users/johndoe/follow \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "User unfollowed successfully",
+  "data": {
+    "following": false,
+    "followersCount": 9,
+    "followingCount": 5
+  }
+}
+```
+
+**Notes:**
+
+- Repeated unfollow is handled safely (idempotent 200)
+- Counts reflect the **target user's** follower/following totals
+
+### GET /api/users/:username/followers
+
+Return a paginated list of users who follow the given username.
+
+**Query parameters:**
+
+| Parameter | Default | Max | Description |
+|-----------|---------|-----|-------------|
+| `page` | `1` | — | Page number (positive integer) |
+| `limit` | `20` | `50` | Users per page |
+
+**Example:**
+
+```bash
+curl "http://localhost:5000/api/users/johndoe/followers?page=1&limit=20" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Followers retrieved successfully",
+  "data": {
+    "users": [
+      {
+        "_id": "...",
+        "name": "Jane Doe",
+        "username": "janedoe",
+        "avatar": null,
+        "bio": "",
+        "createdAt": "..."
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 1,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+### GET /api/users/:username/following
+
+Return a paginated list of users that the given username follows.
+
+**Example:**
+
+```bash
+curl "http://localhost:5000/api/users/johndoe/following?page=1&limit=20" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Uses the same pagination structure and public user fields as the followers endpoint.
+
 ## Testing
 
 ```bash
@@ -675,7 +818,7 @@ npm test
 MONGODB_URI=mongodb://127.0.0.1:27017/social_platform_test npm test
 ```
 
-When MongoDB is unavailable, auth, posts, likes, comments, and users integration tests are skipped automatically and the health/CORS tests still run.
+When MongoDB is unavailable, auth, posts, likes, comments, users, and follow integration tests are skipped automatically and the health/CORS tests still run.
 
 ## Architecture
 
@@ -716,6 +859,10 @@ src/
 | PATCH | `/api/users/me` | Yes | 8 |
 | GET | `/api/users/:username` | No | 8 |
 | GET | `/api/users/search` | Yes | 8 |
+| POST | `/api/users/:username/follow` | Yes | 9 |
+| DELETE | `/api/users/:username/follow` | Yes | 9 |
+| GET | `/api/users/:username/followers` | Yes | 9 |
+| GET | `/api/users/:username/following` | Yes | 9 |
 
 ## Security
 

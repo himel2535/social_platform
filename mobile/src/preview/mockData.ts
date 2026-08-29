@@ -151,6 +151,8 @@ export const PREVIEW_USERS: Record<string, UserProfile> = {
     username: 'nexus',
     bio: 'Building the future of social connection.',
     createdAt: daysAgo(365),
+    followersCount: 2,
+    followingCount: 0,
   },
   alexchen: {
     _id: 'user-2',
@@ -158,6 +160,8 @@ export const PREVIEW_USERS: Record<string, UserProfile> = {
     username: 'alexchen',
     bio: 'Designer & developer. Love glassmorphism.',
     createdAt: daysAgo(180),
+    followersCount: 1,
+    followingCount: 1,
   },
   samrivera: {
     _id: 'user-3',
@@ -165,6 +169,8 @@ export const PREVIEW_USERS: Record<string, UserProfile> = {
     username: 'samrivera',
     bio: 'Photographer. Chasing light and good vibes.',
     createdAt: daysAgo(90),
+    followersCount: 0,
+    followingCount: 1,
   },
   jordanlee: {
     _id: 'user-4',
@@ -172,11 +178,94 @@ export const PREVIEW_USERS: Record<string, UserProfile> = {
     username: 'jordanlee',
     bio: 'QA engineer. Preview mode enthusiast.',
     createdAt: daysAgo(60),
+    followersCount: 0,
+    followingCount: 0,
   },
 };
 
-export function getPreviewUser(username: string): UserProfile | undefined {
-  return PREVIEW_USERS[username.toLowerCase()];
+const followKey = (follower: string, following: string) =>
+  `${follower.toLowerCase()}:${following.toLowerCase()}`;
+
+const PREVIEW_FOLLOWS = new Set<string>([
+  followKey('alexchen', 'nexus'),
+  followKey('samrivera', 'nexus'),
+  followKey('nexus', 'alexchen'),
+]);
+
+function recomputePreviewCounts() {
+  for (const user of Object.values(PREVIEW_USERS)) {
+    user.followersCount = 0;
+    user.followingCount = 0;
+  }
+
+  for (const key of PREVIEW_FOLLOWS) {
+    const [follower, following] = key.split(':');
+    const followerUser = PREVIEW_USERS[follower];
+    const followingUser = PREVIEW_USERS[following];
+
+    if (followerUser) {
+      followerUser.followingCount = (followerUser.followingCount ?? 0) + 1;
+    }
+    if (followingUser) {
+      followingUser.followersCount = (followingUser.followersCount ?? 0) + 1;
+    }
+  }
+}
+
+recomputePreviewCounts();
+
+export function getPreviewFollowState(viewerUsername: string, targetUsername: string): boolean {
+  return PREVIEW_FOLLOWS.has(followKey(viewerUsername, targetUsername));
+}
+
+export function getPreviewUser(username: string, viewerUsername = 'nexus'): UserProfile | undefined {
+  const user = PREVIEW_USERS[username.toLowerCase()];
+  if (!user) {
+    return undefined;
+  }
+
+  return {
+    ...user,
+    following:
+      user.username !== viewerUsername &&
+      getPreviewFollowState(viewerUsername, user.username),
+  };
+}
+
+export function togglePreviewFollow(
+  viewerUsername: string,
+  targetUsername: string,
+): UserProfile | undefined {
+  if (viewerUsername.toLowerCase() === targetUsername.toLowerCase()) {
+    return getPreviewUser(targetUsername, viewerUsername);
+  }
+
+  const key = followKey(viewerUsername, targetUsername);
+
+  if (PREVIEW_FOLLOWS.has(key)) {
+    PREVIEW_FOLLOWS.delete(key);
+  } else {
+    PREVIEW_FOLLOWS.add(key);
+  }
+
+  recomputePreviewCounts();
+  return getPreviewUser(targetUsername, viewerUsername);
+}
+
+export function getPreviewFollowers(username: string): UserProfile[] {
+  const normalized = username.toLowerCase();
+
+  return Object.values(PREVIEW_USERS).filter((user) =>
+    PREVIEW_FOLLOWS.has(followKey(user.username, normalized)),
+  );
+}
+
+export function getPreviewFollowing(username: string): UserProfile[] {
+  const normalized = username.toLowerCase();
+
+  return Object.values(PREVIEW_USERS).filter((user) =>
+    PREVIEW_FOLLOWS.has(followKey(normalized, user.username)),
+  );
 }
 
 export function searchPreviewUsers(query: string): UserProfile[] {
