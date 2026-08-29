@@ -190,6 +190,112 @@ curl http://localhost:5000/api/auth/me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+## Posts Endpoints
+
+Both post endpoints require authentication:
+
+```
+Authorization: Bearer <token>
+```
+
+### POST /api/posts
+
+Create a new text-only post. The authenticated user is always set as the author — client-provided author IDs are ignored.
+
+**Request:**
+
+```json
+{
+  "content": "This is my first post!"
+}
+```
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:5000/api/posts \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"This is my first post!"}'
+```
+
+**Validation rules:**
+
+- `content`: required, string, trimmed, 1–1000 characters
+- Empty or whitespace-only content is rejected
+
+**Success response (201):**
+
+```json
+{
+  "success": true,
+  "message": "Post created successfully",
+  "data": {
+    "post": {
+      "_id": "...",
+      "content": "This is my first post!",
+      "author": {
+        "_id": "...",
+        "name": "John Doe",
+        "username": "johndoe",
+        "avatar": null
+      },
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  }
+}
+```
+
+### GET /api/posts
+
+Retrieve a paginated feed of posts, newest first.
+
+**Query parameters:**
+
+| Parameter | Default | Max | Description |
+|-----------|---------|-----|-------------|
+| `page` | `1` | — | Page number (positive integer) |
+| `limit` | `10` | `50` | Posts per page |
+
+**Example:**
+
+```bash
+curl "http://localhost:5000/api/posts?page=1&limit=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Posts retrieved successfully",
+  "data": {
+    "posts": [],
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 25,
+      "totalPages": 3,
+      "hasNextPage": true,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+**Pagination fields:**
+
+- `page` — current page number
+- `limit` — number of posts per page
+- `total` — total number of posts in the database
+- `totalPages` — total number of pages
+- `hasNextPage` — `true` if more pages exist after the current page
+- `hasPrevPage` — `true` if pages exist before the current page
+
+Author objects include only public fields: `_id`, `name`, `username`, `avatar`. Passwords and other sensitive user fields are never returned.
+
 ## Testing
 
 ```bash
@@ -200,7 +306,7 @@ npm test
 MONGODB_URI=mongodb://127.0.0.1:27017/social_platform_test npm test
 ```
 
-When MongoDB is unavailable, auth integration tests are skipped automatically and the health test still runs.
+When MongoDB is unavailable, auth and posts integration tests are skipped automatically and the health/CORS tests still run.
 
 ## Architecture
 
@@ -230,8 +336,8 @@ src/
 | POST | `/api/auth/signup` | No | 2 |
 | POST | `/api/auth/login` | No | 2 |
 | GET | `/api/auth/me` | Yes | 2 |
-| POST | `/api/posts` | Yes | 3+ |
-| GET | `/api/posts` | Yes | 3+ |
+| POST | `/api/posts` | Yes | 4 |
+| GET | `/api/posts` | Yes | 4 |
 
 ## Security
 

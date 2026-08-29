@@ -11,6 +11,7 @@ const postSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Content is required'],
       trim: true,
+      minlength: [1, 'Post content cannot be empty'],
       maxlength: [1000, 'Post cannot exceed 1000 characters'],
     },
     likes: [

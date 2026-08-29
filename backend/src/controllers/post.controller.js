@@ -1,0 +1,21 @@
+const asyncHandler = require('../utils/asyncHandler');
+const { sendSuccess } = require('../utils/apiResponse');
+const postService = require('../services/post.service');
+
+const createPost = asyncHandler(async (req, res) => {
+  const post = await postService.createPost(req.user._id, req.body.content);
+
+  sendSuccess(res, 201, 'Post created successfully', { post });
+});
+
+const getPosts = asyncHandler(async (req, res) => {
+  const { page, limit } = req.query;
+  const result = await postService.getPosts({ page, limit });
+
+  sendSuccess(res, 200, 'Posts retrieved successfully', result);
+});
+
+module.exports = {
+  createPost,
+  getPosts,
+};
