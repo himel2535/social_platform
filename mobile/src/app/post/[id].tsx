@@ -18,6 +18,8 @@ import { LikeButton } from '@/components/feed/LikeButton';
 import { CommentButton } from '@/components/feed/CommentButton';
 import { spacing } from '@/theme/spacing';
 import { usePreview, getPreviewPost, getPreviewComments } from '@/preview';
+import { getCachedPost } from '@/utils/postCache';
+import { Post } from '@/services/post.service';
 import { formatTimeAgo } from '@/utils/format';
 
 export default function PostDetailScreen() {
@@ -29,37 +31,92 @@ export default function PostDetailScreen() {
 
   const previewPost = isPreviewMode && id ? getPreviewPost(id) : undefined;
   const previewComments = isPreviewMode && id ? getPreviewComments(id) : [];
+  const cachedPost = !isPreviewMode && id ? getCachedPost(id) : undefined;
 
   const [likeOverrides, setLikeOverrides] = useState<
     Record<string, { isLiked: boolean; likesCount: number }>
   >({});
 
-  const handleLike = useCallback(() => {
-    if (!previewPost) return;
+  const handleLike = useCallback((post: Post) => {
     setLikeOverrides((current) => {
-      const existing = current[previewPost._id] ?? {
-        isLiked: previewPost.isLiked,
-        likesCount: previewPost.likesCount,
+      const existing = current[post._id] ?? {
+        isLiked: post.isLiked,
+        likesCount: post.likesCount,
       };
       return {
         ...current,
-        [previewPost._id]: {
+        [post._id]: {
           isLiked: !existing.isLiked,
           likesCount: existing.isLiked ? existing.likesCount - 1 : existing.likesCount + 1,
         },
       };
     });
-  }, [previewPost]);
+  }, []);
+
+  const applyLikeOverrides = (post: Post): Post => ({
+    ...post,
+    ...(likeOverrides[post._id] ?? {
+      isLiked: post.isLiked,
+      likesCount: post.likesCount,
+    }),
+  });
 
   const displayPost = previewPost
-    ? {
-        ...previewPost,
-        ...(likeOverrides[previewPost._id] ?? {
-          isLiked: previewPost.isLiked,
-          likesCount: previewPost.likesCount,
-        }),
-      }
-    : undefined;
+    ? applyLikeOverrides(previewPost)
+    : cachedPost
+      ? applyLikeOverrides(cachedPost)
+      : undefined;
+
+  const renderPostCard = (post: Post) => (
+    <>
+      <GlassCard style={styles.card}>
+        <View style={styles.header}>
+          <View style={styles.author}>
+            <Avatar name={post.author.name} uri={post.author.avatar} size={40} />
+            <View style={styles.authorInfo}>
+              <Typography variant="userName">{post.author.name}</Typography>
+              <Typography variant="username">@{post.author.username}</Typography>
+            </View>
+          </View>
+          <IconButton icon="ellipsis-horizontal" accessibilityLabel="Post options" />
+        </View>
+
+        <Typography variant="postContent" style={styles.postContent}>
+          {post.content}
+        </Typography>
+
+        <Typography variant="metadata" style={styles.time}>
+          {formatTimeAgo(post.createdAt)}
+        </Typography>
+
+        <View style={styles.actions}>
+          <LikeButton
+            count={post.likesCount}
+            isLiked={post.isLiked}
+            onPress={() => {
+              const basePost = previewPost ?? cachedPost;
+              if (basePost) {
+                handleLike(basePost);
+              }
+            }}
+          />
+          <CommentButton count={post.commentsCount} />
+        </View>
+      </GlassCard>
+
+      {isPreviewMode && previewComments.length > 0 && (
+        <View style={styles.commentsSection}>
+          <Typography variant="sectionTitle" style={styles.commentsTitle}>
+            Comments
+          </Typography>
+          <Divider />
+          {previewComments.map((item) => (
+            <CommentItem key={item._id} comment={item} />
+          ))}
+        </View>
+      )}
+    </>
+  );
 
   return (
     <Screen scroll contentContainerStyle={styles.content}>
@@ -76,60 +133,8 @@ export default function PostDetailScreen() {
 
       {loading ? (
         <LoadingSkeleton lines={4} />
-      ) : isPreviewMode && displayPost ? (
-        <>
-          <GlassCard style={styles.card}>
-            <View style={styles.header}>
-              <View style={styles.author}>
-                <Avatar
-                  name={displayPost.author.name}
-                  uri={displayPost.author.avatar}
-                  size={40}
-                />
-                <View style={styles.authorInfo}>
-                  <Typography variant="userName">{displayPost.author.name}</Typography>
-                  <Typography variant="username">@{displayPost.author.username}</Typography>
-                </View>
-              </View>
-              <IconButton icon="ellipsis-horizontal" accessibilityLabel="Post options" />
-            </View>
-
-            <Typography variant="postContent" style={styles.postContent}>
-              {displayPost.content}
-            </Typography>
-
-            <Typography variant="metadata" style={styles.time}>
-              {formatTimeAgo(displayPost.createdAt)}
-            </Typography>
-
-            <View style={styles.actions}>
-              <LikeButton
-                count={displayPost.likesCount}
-                isLiked={displayPost.isLiked}
-                onPress={handleLike}
-              />
-              <CommentButton count={displayPost.commentsCount} />
-            </View>
-          </GlassCard>
-
-          {previewComments.length > 0 && (
-            <View style={styles.commentsSection}>
-              <Typography variant="sectionTitle" style={styles.commentsTitle}>
-                Comments
-              </Typography>
-              <Divider />
-              {previewComments.map((item) => (
-                <CommentItem key={item._id} comment={item} />
-              ))}
-            </View>
-          )}
-        </>
-      ) : id === 'preview-1' ? (
-        <View style={styles.placeholder}>
-          <Typography variant="postContent">
-            Post detail view for ID: {id}. Full post and comments will load here in Phase 7–9.
-          </Typography>
-        </View>
+      ) : displayPost ? (
+        renderPostCard(displayPost)
       ) : (
         <EmptyState
           title="Post not found"
@@ -138,7 +143,9 @@ export default function PostDetailScreen() {
         />
       )}
 
-      <CommentInput value={comment} onChangeText={setComment} onSubmit={() => {}} />
+      {isPreviewMode ? (
+        <CommentInput value={comment} onChangeText={setComment} onSubmit={() => {}} />
+      ) : null}
     </Screen>
   );
 }
@@ -180,8 +187,5 @@ const styles = StyleSheet.create({
   },
   commentsTitle: {
     marginBottom: spacing.md,
-  },
-  placeholder: {
-    paddingVertical: spacing.lg,
   },
 });
