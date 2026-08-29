@@ -16,6 +16,12 @@ const api = axios.create({
   },
 });
 
+let unauthorizedHandler: (() => void) | null = null;
+
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  unauthorizedHandler = handler;
+}
+
 api.interceptors.request.use(async (requestConfig: InternalAxiosRequestConfig) => {
   const token = await getToken();
   if (token && requestConfig.headers) {
@@ -33,8 +39,8 @@ api.interceptors.response.use(
       errors: error.response?.data?.errors,
     };
 
-    if (error.response?.status === 401) {
-      // Token invalid — handled by AuthContext in Phase 6
+    if (error.response?.status === 401 && unauthorizedHandler) {
+      unauthorizedHandler();
     }
 
     return Promise.reject(apiError);

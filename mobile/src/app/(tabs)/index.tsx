@@ -1,17 +1,26 @@
 import { useState, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen, AppHeader, IconButton, Badge, EmptyState, LoadingSkeleton } from '@/components/ui';
 import { SearchBar } from '@/components/feed/SearchBar';
 import { PostCard } from '@/components/feed/PostCard';
 import { spacing } from '@/theme/spacing';
 import { Post } from '@/services/post.service';
 import { usePreview, PREVIEW_POSTS } from '@/preview';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function FeedScreen() {
   const [search, setSearch] = useState('');
   const [loading] = useState(false);
   const { isPreviewMode } = usePreview();
+  const { isAuthenticated, logout } = useAuth();
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>(PREVIEW_POSTS);
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/(auth)/login');
+  };
 
   const handleLike = useCallback((postId: string) => {
     setPosts((current) =>
@@ -42,6 +51,13 @@ export default function FeedScreen() {
         title="Nexus Social"
         rightAction={
           <View style={styles.headerActions}>
+            {isAuthenticated && !isPreviewMode ? (
+              <IconButton
+                icon="log-out-outline"
+                accessibilityLabel="Log out"
+                onPress={handleLogout}
+              />
+            ) : null}
             <IconButton icon="search-outline" accessibilityLabel="Search" />
             <View>
               <IconButton icon="notifications-outline" accessibilityLabel="Notifications" />

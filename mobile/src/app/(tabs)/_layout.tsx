@@ -1,12 +1,30 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { StyleSheet, Platform, View } from 'react-native';
 import { colors } from '@/theme/colors';
 import { glass, layout } from '@/theme/glass';
 import { DevPreviewControls } from '@/preview';
+import { LoadingSpinner, Screen } from '@/components/ui';
+import { useAuth } from '@/hooks/useAuth';
+import { usePreview } from '@/preview';
 
 export default function TabsLayout() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const { isPreviewMode } = usePreview();
+
+  if (isLoading) {
+    return (
+      <Screen>
+        <LoadingSpinner />
+      </Screen>
+    );
+  }
+
+  if (!isAuthenticated && !(__DEV__ && isPreviewMode)) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
   return (
     <View style={styles.wrapper}>
       <Tabs

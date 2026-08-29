@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { User, authService, SignupData, LoginData } from '@/services/auth.service';
+import { ApiError, setUnauthorizedHandler } from '@/services/api';
 import { getToken, saveToken, clearAuthStorage, getUser, saveUser } from '@/utils/storage';
 
 type AuthContextValue = {
@@ -20,17 +21,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const logout = useCallback(async () => {
+    setUser(null);
+    setToken(null);
+    await clearAuthStorage();
+  }, []);
+
   const restoreSession = useCallback(async () => {
     try {
       const storedToken = await getToken();
       const storedUser = await getUser();
 
-      if (storedToken) {
-        setToken(storedToken);
-        if (storedUser) {
+      if (!storedToken) {
+        return;
+      }
+
+      setToken(storedToken);
+
+      if (storedUser) {
+        try {
           setUser(JSON.parse(storedUser));
+        } catch {
+          // Ignore invalid cached user JSON
         }
-        // Phase 6: validate token via authService.getMe()
+      }
+
+      try {
+        const freshUser = await authService.getMe();
+        setUser(freshUser);
+        await saveUser(JSON.stringify(freshUser));
+      } catch (error) {
+        const apiError = error as ApiError;
+
+        if (apiError.status === 401) {
+          setUser(null);
+          setToken(null);
+          await clearAuthStorage();
+        }
       }
     } catch (error) {
       console.warn('[Auth] Failed to restore session:', error);
@@ -42,6 +69,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      logout();
+    });
+
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, [logout]);
 
   const login = useCallback(async (data: LoginData) => {
     const response = await authService.login(data);
@@ -59,19 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await saveUser(JSON.stringify(response.user));
   }, []);
 
-  const logout = useCallback(async () => {
-    setUser(null);
-    setToken(null);
-    await clearAuthStorage();
-  }, []);
-
   return (
     <AuthContext.Provider
       value={{
         user,
         token,
         isLoading,
-        isAuthenticated: !!token,
+        isAuthenticated: !!token && !!user,
         login,
         signup,
         logout,

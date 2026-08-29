@@ -25,16 +25,44 @@ export type LoginData = {
   password: string;
 };
 
+type BackendAuthData = {
+  token: string;
+  user: User;
+};
+
+type BackendMeData = {
+  user: User;
+};
+
+type BackendSuccess<T> = {
+  success: true;
+  message: string;
+  data: T;
+};
+
 export const authService = {
-  async signup(_data: SignupData): Promise<AuthResponse> {
-    throw new Error('Not implemented — Phase 6');
+  async signup(data: SignupData): Promise<AuthResponse> {
+    const response = await api.post<BackendSuccess<BackendAuthData>>('/auth/signup', {
+      name: data.name.trim(),
+      username: data.username.trim(),
+      email: data.email.trim(),
+      password: data.password,
+    });
+
+    return response.data.data;
   },
 
-  async login(_data: LoginData): Promise<AuthResponse> {
-    throw new Error('Not implemented — Phase 6');
+  async login(data: LoginData): Promise<AuthResponse> {
+    const response = await api.post<BackendSuccess<BackendAuthData>>('/auth/login', {
+      email: data.email.trim(),
+      password: data.password,
+    });
+
+    return response.data.data;
   },
 
   async getMe(): Promise<User> {
-    throw new Error('Not implemented — Phase 6');
+    const response = await api.get<BackendSuccess<BackendMeData>>('/auth/me');
+    return response.data.data.user;
   },
 };

@@ -25,8 +25,8 @@ Configure `.env` with your values (see below).
 | `MONGODB_URI` | Yes | MongoDB connection string |
 | `JWT_SECRET` | Yes | JWT signing secret (use a long random string) |
 | `JWT_EXPIRES_IN` | No | Token expiry (default: `7d`) |
-| `CLIENT_URL` | No | Frontend origin for CORS (preferred) |
-| `CORS_ORIGIN` | No | Fallback CORS origin (default: `*`) |
+| `CLIENT_URL` | No | Production frontend origin for CORS. In development, leave empty — all `localhost` Expo Web ports are allowed automatically. |
+| `CORS_ORIGIN` | No | Production fallback: comma-separated extra allowed origins |
 | `FIREBASE_PROJECT_ID` | Phase 10+ | Firebase project ID |
 | `FIREBASE_CLIENT_EMAIL` | Phase 10+ | Service account email |
 | `FIREBASE_PRIVATE_KEY` | Phase 10+ | Service account private key |
@@ -236,7 +236,7 @@ src/
 ## Security
 
 - Helmet for HTTP headers
-- CORS via `CLIENT_URL` / `CORS_ORIGIN`
+- CORS: development allows any `localhost` / `127.0.0.1` origin (Expo Web ports 8081, 8082, etc.); production uses `CLIENT_URL` / `CORS_ORIGIN` allowlist
 - Rate limiting on `/api/*` (100 req / 15 min)
 - Stricter auth rate limiting (20 req / 15 min on signup/login)
 - JWT authentication
