@@ -270,7 +270,7 @@ export default function FeedScreen() {
                 onPress={handleLogout}
               />
             ) : null}
-            <IconButton icon="search-outline" accessibilityLabel="Search" />
+            <IconButton icon="search-outline" accessibilityLabel="Search" onPress={() => router.push('/search')} />
             <View>
               <IconButton icon="notifications-outline" accessibilityLabel="Notifications" />
               <Badge dot style={styles.badge} />

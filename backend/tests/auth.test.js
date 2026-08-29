@@ -16,7 +16,7 @@ const TEST_DB_URI =
   'mongodb://127.0.0.1:27017/social_platform_test';
 
 const app = require('../src/app');
-const User = require('../src/models/User');
+const { clearTestCollections } = require('./helpers/dbCleanup');
 
 const unique = () => Date.now().toString(36);
 
@@ -40,12 +40,12 @@ describe('Authentication API', async () => {
   }
 
   after(async () => {
-    await User.deleteMany({});
+    await clearTestCollections();
     await mongoose.connection.close();
   });
 
   beforeEach(async () => {
-    await User.deleteMany({});
+    await clearTestCollections();
   });
 
   it('POST /api/auth/signup — successful signup', async () => {

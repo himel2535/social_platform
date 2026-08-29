@@ -15,8 +15,7 @@ const TEST_DB_URI =
   'mongodb://127.0.0.1:27017/social_platform_test';
 
 const app = require('../src/app');
-const Post = require('../src/models/Post');
-const User = require('../src/models/User');
+const { clearTestCollections } = require('./helpers/dbCleanup');
 
 const unique = () => Date.now().toString(36);
 
@@ -60,14 +59,12 @@ describe('Posts API', async () => {
   }
 
   after(async () => {
-    await Post.deleteMany({});
-    await User.deleteMany({});
+    await clearTestCollections();
     await mongoose.connection.close();
   });
 
   beforeEach(async () => {
-    await Post.deleteMany({});
-    await User.deleteMany({});
+    await clearTestCollections();
   });
 
   it('POST /api/posts — without token returns 401', async () => {
@@ -210,8 +207,14 @@ describe('Posts API', async () => {
 
     assert.equal(page1.status, 200);
     assert.equal(page1.body.data.posts.length, 10);
+    assert.equal(page1.body.data.pagination.total, 12);
     assert.equal(page2.status, 200);
     assert.equal(page2.body.data.posts.length, 2);
+    assert.equal(page2.body.data.pagination.total, 12);
+
+    const page1Ids = new Set(page1.body.data.posts.map((post) => post._id));
+    const page2Ids = page2.body.data.posts.map((post) => post._id);
+    assert.equal(page2Ids.some((id) => page1Ids.has(id)), false);
   });
 
   it('GET /api/posts — invalid page/limit handled safely', async () => {

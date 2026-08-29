@@ -12,6 +12,7 @@ type AuthContextValue = {
   signup: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
+  updateUser: (user: User) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -96,6 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await saveUser(JSON.stringify(response.user));
   }, []);
 
+  const updateUser = useCallback(async (nextUser: User) => {
+    setUser(nextUser);
+    await saveUser(JSON.stringify(nextUser));
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -107,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signup,
         logout,
         restoreSession,
+        updateUser,
       }}
     >
       {children}

@@ -40,7 +40,7 @@ const getComments = async (postId, { page = DEFAULT_PAGE, limit = DEFAULT_LIMIT 
 
   const [comments, total] = await Promise.all([
     Comment.find({ post: postId })
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .skip(skip)
       .limit(safeLimit)
       .populate('author', AUTHOR_FIELDS)

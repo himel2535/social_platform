@@ -52,7 +52,7 @@ const getPosts = async ({ page = DEFAULT_PAGE, limit = DEFAULT_LIMIT, userId } =
 
   const [posts, total] = await Promise.all([
     Post.find()
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
       .skip(skip)
       .limit(safeLimit)
       .populate('author', AUTHOR_FIELDS)

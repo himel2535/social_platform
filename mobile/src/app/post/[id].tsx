@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import {
   Screen,
   AppHeader,
@@ -177,13 +177,18 @@ export default function PostDetailScreen() {
     <>
       <GlassCard style={styles.card}>
         <View style={styles.header}>
-          <View style={styles.author}>
+          <Pressable
+            style={styles.author}
+            onPress={() => router.push(`/profile/${post.author.username}`)}
+            accessibilityRole="button"
+            accessibilityLabel={`View profile for ${post.author.name}`}
+          >
             <Avatar name={post.author.name} uri={post.author.avatar} size={40} />
             <View style={styles.authorInfo}>
               <Typography variant="userName">{post.author.name}</Typography>
               <Typography variant="username">@{post.author.username}</Typography>
             </View>
-          </View>
+          </Pressable>
           <IconButton icon="ellipsis-horizontal" accessibilityLabel="Post options" />
         </View>
 

@@ -16,7 +16,7 @@ const TEST_DB_URI =
 
 const app = require('../src/app');
 const Post = require('../src/models/Post');
-const User = require('../src/models/User');
+const { clearTestCollections } = require('./helpers/dbCleanup');
 
 const unique = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
@@ -61,14 +61,12 @@ describe('Likes API', async () => {
   }
 
   after(async () => {
-    await Post.deleteMany({});
-    await User.deleteMany({});
+    await clearTestCollections();
     await mongoose.connection.close();
   });
 
   beforeEach(async () => {
-    await Post.deleteMany({});
-    await User.deleteMany({});
+    await clearTestCollections();
   });
 
   it('POST /api/posts/:id/like — without token returns 401', async () => {

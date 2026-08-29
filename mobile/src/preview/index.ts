@@ -3,7 +3,10 @@ export { DevPreviewControls } from './DevPreviewControls';
 export {
   PREVIEW_POSTS,
   PREVIEW_NOTIFICATIONS,
+  PREVIEW_USERS,
   getPreviewPost,
   getPreviewComments,
+  getPreviewUser,
+  searchPreviewUsers,
 } from './mockData';
 export type { PreviewNotification } from './mockData';

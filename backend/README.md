@@ -495,6 +495,176 @@ curl -X DELETE http://localhost:5000/api/comments/COMMENT_ID \
 - Comment not found → 404
 - Invalid comment ID → 400
 
+## Users Endpoints
+
+### GET /api/users/me
+
+Return the authenticated user's full profile (includes email).
+
+**Auth:** JWT required
+
+**Example:**
+
+```bash
+curl http://localhost:5000/api/users/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Profile retrieved successfully",
+  "data": {
+    "user": {
+      "_id": "...",
+      "name": "John Doe",
+      "username": "johndoe",
+      "email": "john@example.com",
+      "avatar": null,
+      "bio": "",
+      "createdAt": "..."
+    }
+  }
+}
+```
+
+### GET /api/users/:username
+
+Return a public user profile by username. No authentication required.
+
+**Example:**
+
+```bash
+curl http://localhost:5000/api/users/johndoe
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Profile retrieved successfully",
+  "data": {
+    "user": {
+      "_id": "...",
+      "name": "John Doe",
+      "username": "johndoe",
+      "avatar": null,
+      "bio": "",
+      "createdAt": "..."
+    }
+  }
+}
+```
+
+**Notes:**
+
+- Email and password are never returned
+- Non-existent username → 404
+
+### PATCH /api/users/me
+
+Update the authenticated user's profile.
+
+**Auth:** JWT required
+
+**Allowed fields:**
+
+| Field | Rules |
+|-------|-------|
+| `name` | Optional; if provided: trimmed, 2–100 characters |
+| `bio` | Optional; trimmed, max 160 characters |
+| `avatar` | Optional; valid HTTP/HTTPS URL or empty string to clear |
+
+**Protected fields (cannot be modified):** `_id`, `username`, `email`, `password`, `roles`, `fcmTokens`
+
+**Example:**
+
+```bash
+curl -X PATCH http://localhost:5000/api/users/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Jane Doe","bio":"Hello world!","avatar":"https://example.com/avatar.png"}'
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Profile updated successfully",
+  "data": {
+    "user": {
+      "_id": "...",
+      "name": "Jane Doe",
+      "username": "johndoe",
+      "email": "john@example.com",
+      "avatar": "https://example.com/avatar.png",
+      "bio": "Hello world!",
+      "createdAt": "..."
+    }
+  }
+}
+```
+
+### GET /api/users/search
+
+Search users by username or name.
+
+**Auth:** JWT required
+
+**Query parameters:**
+
+| Parameter | Default | Max | Description |
+|-----------|---------|-----|-------------|
+| `q` | — | 100 chars | Search query (required, min 1 character) |
+| `page` | `1` | — | Page number (positive integer) |
+| `limit` | `20` | `50` | Results per page |
+
+**Example:**
+
+```bash
+curl "http://localhost:5000/api/users/search?q=john&page=1&limit=20" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Users retrieved successfully",
+  "data": {
+    "users": [
+      {
+        "_id": "...",
+        "name": "John Doe",
+        "username": "johndoe",
+        "avatar": null,
+        "bio": "",
+        "createdAt": "..."
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 1,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+**Validation:**
+
+- Empty or missing `q` → 400
+- `limit` above 50 → 400
+- Password, email, and other sensitive fields are never returned
+
 ## Testing
 
 ```bash
@@ -505,7 +675,7 @@ npm test
 MONGODB_URI=mongodb://127.0.0.1:27017/social_platform_test npm test
 ```
 
-When MongoDB is unavailable, auth, posts, likes, and comments integration tests are skipped automatically and the health/CORS tests still run.
+When MongoDB is unavailable, auth, posts, likes, comments, and users integration tests are skipped automatically and the health/CORS tests still run.
 
 ## Architecture
 
@@ -542,6 +712,10 @@ src/
 | GET | `/api/posts/:id/comments` | Yes | 7 |
 | POST | `/api/posts/:id/comments` | Yes | 7 |
 | DELETE | `/api/comments/:id` | Yes | 7 |
+| GET | `/api/users/me` | Yes | 8 |
+| PATCH | `/api/users/me` | Yes | 8 |
+| GET | `/api/users/:username` | No | 8 |
+| GET | `/api/users/search` | Yes | 8 |
 
 ## Security
 

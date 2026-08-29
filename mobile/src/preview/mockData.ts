@@ -1,5 +1,6 @@
 import { Post } from '@/services/post.service';
 import { Comment } from '@/services/comment.service';
+import { UserProfile } from '@/services/user.service';
 
 export type PreviewNotification = {
   id: string;
@@ -141,4 +142,52 @@ export function getPreviewPost(id: string): Post | undefined {
 
 export function getPreviewComments(postId: string): Comment[] {
   return PREVIEW_COMMENTS_BY_POST[postId] ?? [];
+}
+
+export const PREVIEW_USERS: Record<string, UserProfile> = {
+  nexus: {
+    _id: 'user-1',
+    name: 'Nexus Team',
+    username: 'nexus',
+    bio: 'Building the future of social connection.',
+    createdAt: daysAgo(365),
+  },
+  alexchen: {
+    _id: 'user-2',
+    name: 'Alex Chen',
+    username: 'alexchen',
+    bio: 'Designer & developer. Love glassmorphism.',
+    createdAt: daysAgo(180),
+  },
+  samrivera: {
+    _id: 'user-3',
+    name: 'Sam Rivera',
+    username: 'samrivera',
+    bio: 'Photographer. Chasing light and good vibes.',
+    createdAt: daysAgo(90),
+  },
+  jordanlee: {
+    _id: 'user-4',
+    name: 'Jordan Lee',
+    username: 'jordanlee',
+    bio: 'QA engineer. Preview mode enthusiast.',
+    createdAt: daysAgo(60),
+  },
+};
+
+export function getPreviewUser(username: string): UserProfile | undefined {
+  return PREVIEW_USERS[username.toLowerCase()];
+}
+
+export function searchPreviewUsers(query: string): UserProfile[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return [];
+  }
+
+  return Object.values(PREVIEW_USERS).filter(
+    (user) =>
+      user.username.toLowerCase().includes(normalized) ||
+      user.name.toLowerCase().includes(normalized),
+  );
 }

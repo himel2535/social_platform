@@ -17,8 +17,12 @@ type Props = {
 export function PostCard({ post, onLike, onComment }: Props) {
   const router = useRouter();
 
-  const handlePress = () => {
+  const handlePostPress = () => {
     router.push(`/post/${post._id}`);
+  };
+
+  const handleAuthorPress = () => {
+    router.push(`/profile/${post.author.username}`);
   };
 
   return (
@@ -26,9 +30,9 @@ export function PostCard({ post, onLike, onComment }: Props) {
       <View style={styles.header}>
         <Pressable
           style={styles.author}
-          onPress={handlePress}
+          onPress={handleAuthorPress}
           accessibilityRole="button"
-          accessibilityLabel={`View post by ${post.author.name}`}
+          accessibilityLabel={`View profile for ${post.author.name}`}
         >
           <Avatar name={post.author.name} uri={post.author.avatar} size={40} />
           <View style={styles.authorInfo}>
@@ -44,7 +48,7 @@ export function PostCard({ post, onLike, onComment }: Props) {
       </View>
 
       <Pressable
-        onPress={handlePress}
+        onPress={handlePostPress}
         accessibilityRole="button"
         accessibilityLabel="View post"
       >
@@ -59,7 +63,7 @@ export function PostCard({ post, onLike, onComment }: Props) {
 
       <View style={styles.actions}>
         <LikeButton count={post.likesCount} isLiked={post.likedByMe} onPress={onLike} />
-        <CommentButton count={post.commentsCount} onPress={onComment || handlePress} />
+        <CommentButton count={post.commentsCount} onPress={onComment || handlePostPress} />
       </View>
     </GlassCard>
   );

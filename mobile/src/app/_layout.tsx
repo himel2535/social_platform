@@ -32,6 +32,9 @@ export default function RootLayout() {
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="post/[id]" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="profile/[username]" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="search" options={{ animation: 'slide_from_right' }} />
             </Stack>
           </ToastProvider>
         </PreviewProvider>
