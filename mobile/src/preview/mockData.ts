@@ -24,7 +24,7 @@ export const PREVIEW_POSTS: Post[] = [
     },
     likesCount: 12,
     commentsCount: 3,
-    isLiked: false,
+    likedByMe: false,
     createdAt: hoursAgo(2),
   },
   {
@@ -38,7 +38,7 @@ export const PREVIEW_POSTS: Post[] = [
     },
     likesCount: 48,
     commentsCount: 1,
-    isLiked: true,
+    likedByMe: true,
     createdAt: hoursAgo(5),
   },
   {
@@ -52,7 +52,7 @@ export const PREVIEW_POSTS: Post[] = [
     },
     likesCount: 7,
     commentsCount: 0,
-    isLiked: false,
+    likedByMe: false,
     createdAt: daysAgo(1),
   },
 ];

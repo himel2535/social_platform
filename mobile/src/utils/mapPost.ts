@@ -9,6 +9,8 @@ export type BackendPost = {
     username: string;
     avatar: string | null;
   };
+  likesCount?: number;
+  likedByMe?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -27,9 +29,9 @@ export function mapApiPost(raw: BackendPost): Post {
     _id: raw._id,
     content: raw.content,
     author: mapAuthor(raw.author),
-    likesCount: 0,
+    likesCount: raw.likesCount ?? 0,
     commentsCount: 0,
-    isLiked: false,
+    likedByMe: raw.likedByMe ?? false,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };

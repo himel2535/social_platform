@@ -240,6 +240,8 @@ curl -X POST http://localhost:5000/api/posts \
         "username": "johndoe",
         "avatar": null
       },
+      "likesCount": 0,
+      "likedByMe": false,
       "createdAt": "...",
       "updatedAt": "..."
     }
@@ -294,7 +296,64 @@ curl "http://localhost:5000/api/posts?page=1&limit=10" \
 - `hasNextPage` — `true` if more pages exist after the current page
 - `hasPrevPage` — `true` if pages exist before the current page
 
-Author objects include only public fields: `_id`, `name`, `username`, `avatar`. Passwords and other sensitive user fields are never returned.
+Author objects include only public fields: `_id`, `name`, `username`, `avatar`. Passwords and other sensitive user fields are never returned. Each post includes `likesCount` and `likedByMe` (whether the authenticated user has liked the post). The internal `likes` array is never exposed.
+
+### POST /api/posts/:id/like
+
+Like a post. The authenticated user is added to the post's likes — client-provided user IDs are ignored.
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:5000/api/posts/POST_ID/like \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Post liked",
+  "data": {
+    "liked": true,
+    "likesCount": 1
+  }
+}
+```
+
+Duplicate like requests are idempotent — the count does not increase twice for the same user.
+
+### DELETE /api/posts/:id/like
+
+Remove the authenticated user's like from a post.
+
+**Example:**
+
+```bash
+curl -X DELETE http://localhost:5000/api/posts/POST_ID/like \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Post unliked",
+  "data": {
+    "liked": false,
+    "likesCount": 0
+  }
+}
+```
+
+Duplicate unlike requests are safe and idempotent.
+
+**Validation:**
+
+- `:id` must be a valid MongoDB ObjectId (400 if malformed)
+- Post must exist (404 if not found)
 
 ## Testing
 
@@ -306,7 +365,7 @@ npm test
 MONGODB_URI=mongodb://127.0.0.1:27017/social_platform_test npm test
 ```
 
-When MongoDB is unavailable, auth and posts integration tests are skipped automatically and the health/CORS tests still run.
+When MongoDB is unavailable, auth, posts, and likes integration tests are skipped automatically and the health/CORS tests still run.
 
 ## Architecture
 
@@ -338,6 +397,8 @@ src/
 | GET | `/api/auth/me` | Yes | 2 |
 | POST | `/api/posts` | Yes | 4 |
 | GET | `/api/posts` | Yes | 4 |
+| POST | `/api/posts/:id/like` | Yes | 6 |
+| DELETE | `/api/posts/:id/like` | Yes | 6 |
 
 ## Security
 

@@ -15,7 +15,7 @@ export type Post = {
   author: PostAuthor;
   likesCount: number;
   commentsCount: number;
-  isLiked: boolean;
+  likedByMe: boolean;
   createdAt: string;
   updatedAt?: string;
 };
@@ -36,6 +36,11 @@ export type PostsResponse = {
 
 export type CreatePostData = {
   content: string;
+};
+
+export type LikeResponse = {
+  liked: boolean;
+  likesCount: number;
 };
 
 type BackendPagination = Pagination;
@@ -82,7 +87,13 @@ export const postService = {
     return post;
   },
 
-  async likePost(_postId: string): Promise<void> {
-    throw new Error('Not implemented — Phase 7');
+  async likePost(postId: string): Promise<LikeResponse> {
+    const response = await api.post<BackendSuccess<LikeResponse>>(`/posts/${postId}/like`);
+    return response.data.data;
+  },
+
+  async unlikePost(postId: string): Promise<LikeResponse> {
+    const response = await api.delete<BackendSuccess<LikeResponse>>(`/posts/${postId}/like`);
+    return response.data.data;
   },
 };

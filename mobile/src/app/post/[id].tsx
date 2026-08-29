@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import {
@@ -21,51 +21,67 @@ import { usePreview, getPreviewPost, getPreviewComments } from '@/preview';
 import { getCachedPost } from '@/utils/postCache';
 import { Post } from '@/services/post.service';
 import { formatTimeAgo } from '@/utils/format';
+import { useToggleLike } from '@/hooks/useToggleLike';
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [comment, setComment] = useState('');
   const { isPreviewMode } = usePreview();
+  const { toggleLike } = useToggleLike();
   const loading = false;
 
   const previewPost = isPreviewMode && id ? getPreviewPost(id) : undefined;
   const previewComments = isPreviewMode && id ? getPreviewComments(id) : [];
   const cachedPost = !isPreviewMode && id ? getCachedPost(id) : undefined;
 
+  const [authenticatedPost, setAuthenticatedPost] = useState<Post | undefined>(cachedPost);
+
+  useEffect(() => {
+    if (!isPreviewMode && cachedPost) {
+      setAuthenticatedPost(cachedPost);
+    }
+  }, [isPreviewMode, cachedPost]);
+
   const [likeOverrides, setLikeOverrides] = useState<
-    Record<string, { isLiked: boolean; likesCount: number }>
+    Record<string, { likedByMe: boolean; likesCount: number }>
   >({});
 
-  const handleLike = useCallback((post: Post) => {
+  const handlePreviewLike = useCallback((post: Post) => {
     setLikeOverrides((current) => {
       const existing = current[post._id] ?? {
-        isLiked: post.isLiked,
+        likedByMe: post.likedByMe,
         likesCount: post.likesCount,
       };
       return {
         ...current,
         [post._id]: {
-          isLiked: !existing.isLiked,
-          likesCount: existing.isLiked ? existing.likesCount - 1 : existing.likesCount + 1,
+          likedByMe: !existing.likedByMe,
+          likesCount: existing.likedByMe ? existing.likesCount - 1 : existing.likesCount + 1,
         },
       };
     });
   }, []);
 
-  const applyLikeOverrides = (post: Post): Post => ({
+  const applyPreviewLikeOverrides = (post: Post): Post => ({
     ...post,
     ...(likeOverrides[post._id] ?? {
-      isLiked: post.isLiked,
+      likedByMe: post.likedByMe,
       likesCount: post.likesCount,
     }),
   });
 
-  const displayPost = previewPost
-    ? applyLikeOverrides(previewPost)
-    : cachedPost
-      ? applyLikeOverrides(cachedPost)
-      : undefined;
+  const displayPost = isPreviewMode
+    ? previewPost
+      ? applyPreviewLikeOverrides(previewPost)
+      : undefined
+    : authenticatedPost;
+
+  const handleAuthenticatedLike = useCallback(() => {
+    if (authenticatedPost) {
+      toggleLike(authenticatedPost, undefined, setAuthenticatedPost);
+    }
+  }, [authenticatedPost, toggleLike]);
 
   const renderPostCard = (post: Post) => (
     <>
@@ -92,13 +108,8 @@ export default function PostDetailScreen() {
         <View style={styles.actions}>
           <LikeButton
             count={post.likesCount}
-            isLiked={post.isLiked}
-            onPress={() => {
-              const basePost = previewPost ?? cachedPost;
-              if (basePost) {
-                handleLike(basePost);
-              }
-            }}
+            isLiked={post.likedByMe}
+            onPress={isPreviewMode ? () => previewPost && handlePreviewLike(previewPost) : handleAuthenticatedLike}
           />
           <CommentButton count={post.commentsCount} />
         </View>

@@ -1,4 +1,4 @@
-const { body, query } = require('express-validator');
+const { body, query, param } = require('express-validator');
 
 const createPostRules = [
   body('content')
@@ -26,4 +26,6 @@ const getPostsQueryRules = [
     .toInt(),
 ];
 
-module.exports = { createPostRules, getPostsQueryRules };
+const postIdRules = [param('id').isMongoId().withMessage('Invalid post ID')];
+
+module.exports = { createPostRules, getPostsQueryRules, postIdRules };

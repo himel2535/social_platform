@@ -58,7 +58,7 @@ export function PostCard({ post, onLike, onComment }: Props) {
       </Pressable>
 
       <View style={styles.actions}>
-        <LikeButton count={post.likesCount} isLiked={post.isLiked} onPress={onLike} />
+        <LikeButton count={post.likesCount} isLiked={post.likedByMe} onPress={onLike} />
         <CommentButton count={post.commentsCount} onPress={onComment || handlePress} />
       </View>
     </GlassCard>

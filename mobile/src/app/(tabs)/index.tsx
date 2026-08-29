@@ -20,6 +20,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 import { cachePosts } from '@/utils/postCache';
+import { useToggleLike } from '@/hooks/useToggleLike';
 
 const PAGE_LIMIT = 10;
 
@@ -51,6 +52,7 @@ export default function FeedScreen() {
   const loadingMoreRef = useRef(false);
   const paginationRef = useRef<Pagination | null>(null);
   const postsLengthRef = useRef(0);
+  const { toggleLike } = useToggleLike();
 
   useEffect(() => {
     paginationRef.current = pagination;
@@ -149,24 +151,27 @@ export default function FeedScreen() {
 
   const handleLike = useCallback(
     (postId: string, isPreview: boolean) => {
-      const updater = (current: Post[]) =>
-        current.map((post) =>
-          post._id === postId
-            ? {
-                ...post,
-                isLiked: !post.isLiked,
-                likesCount: post.isLiked ? post.likesCount - 1 : post.likesCount + 1,
-              }
-            : post,
-        );
-
       if (isPreview) {
-        setPreviewPosts(updater);
-      } else {
-        setPosts(updater);
+        setPreviewPosts((current) =>
+          current.map((post) =>
+            post._id === postId
+              ? {
+                  ...post,
+                  likedByMe: !post.likedByMe,
+                  likesCount: post.likedByMe ? post.likesCount - 1 : post.likesCount + 1,
+                }
+              : post,
+          ),
+        );
+        return;
+      }
+
+      const post = posts.find((item) => item._id === postId);
+      if (post) {
+        toggleLike(post, setPosts);
       }
     },
-    [],
+    [posts, toggleLike],
   );
 
   const filterPosts = (items: Post[]) =>
