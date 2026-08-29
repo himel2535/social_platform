@@ -17,6 +17,7 @@ import { spacing } from '@/theme/spacing';
 import { Post, Pagination, postService } from '@/services/post.service';
 import { usePreview, PREVIEW_POSTS } from '@/preview';
 import { useAuth } from '@/hooks/useAuth';
+import { AccountMenu } from '@/components/navigation/AccountMenu';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 import { cachePosts } from '@/utils/postCache';
@@ -38,7 +39,7 @@ function dedupePosts(posts: Post[]): Post[] {
 export default function FeedScreen() {
   const [search, setSearch] = useState('');
   const { isPreviewMode } = usePreview();
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
 
   const [previewPosts, setPreviewPosts] = useState<Post[]>(PREVIEW_POSTS);
@@ -119,11 +120,6 @@ export default function FeedScreen() {
       }
     }, [isPreviewMode, isAuthenticated, loadFeed]),
   );
-
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/(auth)/login');
-  };
 
   const handleRefresh = useCallback(() => {
     loadFeed(1, { refresh: true });
@@ -263,14 +259,7 @@ export default function FeedScreen() {
         title="Nexus Social"
         rightAction={
           <View style={styles.headerActions}>
-            {isAuthenticated && !isPreviewMode ? (
-              <IconButton
-                icon="log-out-outline"
-                accessibilityLabel="Log out"
-                onPress={handleLogout}
-              />
-            ) : null}
-            <IconButton icon="search-outline" accessibilityLabel="Search" onPress={() => router.push('/search')} />
+            {(isAuthenticated || isPreviewMode) ? <AccountMenu size={32} /> : null}
             <View>
               <IconButton icon="notifications-outline" accessibilityLabel="Notifications" />
               <Badge dot style={styles.badge} />
@@ -290,7 +279,7 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: 100,
+    flexGrow: 1,
   },
   headerActions: {
     flexDirection: 'row',

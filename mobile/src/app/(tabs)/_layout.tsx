@@ -6,12 +6,15 @@ import { colors } from '@/theme/colors';
 import { glass, layout } from '@/theme/glass';
 import { DevPreviewControls } from '@/preview';
 import { LoadingSpinner, Screen } from '@/components/ui';
+import { DesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const { isPreviewMode } = usePreview();
+  const { isDesktop } = useResponsive();
 
   if (isLoading) {
     return (
@@ -25,49 +28,78 @@ export default function TabsLayout() {
     return <Redirect href="/(auth)/login" />;
   }
 
+  const tabs = (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: isDesktop ? styles.hiddenTabBar : styles.tabBar,
+        tabBarBackground: () =>
+          Platform.OS === 'ios' && !isDesktop ? (
+            <BlurView intensity={glass.blurIntensity} tint="dark" style={StyleSheet.absoluteFill} />
+          ) : undefined,
+        tabBarLabelStyle: styles.tabLabel,
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Feed',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="search-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="create"
+        options={{
+          title: 'Create',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="add-circle-outline" size={size} color={colors.secondary} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alerts',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="notifications-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+
   return (
     <View style={styles.wrapper}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: colors.primary,
-          tabBarInactiveTintColor: colors.textSecondary,
-          tabBarStyle: styles.tabBar,
-          tabBarBackground: () =>
-            Platform.OS === 'ios' ? (
-              <BlurView intensity={glass.blurIntensity} tint="dark" style={StyleSheet.absoluteFill} />
-            ) : undefined,
-          tabBarLabelStyle: styles.tabLabel,
-        }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Feed',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="home-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="create"
-          options={{
-            title: 'Create',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="add-circle-outline" size={size} color={colors.secondary} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="notifications"
-          options={{
-            title: 'Alerts',
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="notifications-outline" size={size} color={color} />
-            ),
-          }}
-        />
-      </Tabs>
+      {isDesktop ? (
+        <View style={styles.desktopLayout}>
+          <DesktopSidebar />
+          <View style={styles.desktopContent}>{tabs}</View>
+        </View>
+      ) : (
+        tabs
+      )}
       <DevPreviewControls />
     </View>
   );
@@ -76,6 +108,16 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
+  },
+  desktopLayout: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  desktopContent: {
+    flex: 1,
+  },
+  hiddenTabBar: {
+    display: 'none',
   },
   tabBar: {
     position: 'absolute',

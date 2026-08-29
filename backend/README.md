@@ -22,7 +22,8 @@ Configure `.env` with your values (see below).
 |----------|----------|-------------|
 | `PORT` | No | Server port (default: 5000) |
 | `NODE_ENV` | No | `development` / `production` |
-| `MONGODB_URI` | Yes | MongoDB connection string |
+| `MONGODB_URI` | Yes | Development MongoDB connection string (database: `social_platform`) |
+| `MONGODB_URI_TEST` | Tests only | Separate test database URI (database must end with `_test`, e.g. `social_platform_test`) |
 | `JWT_SECRET` | Yes | JWT signing secret (use a long random string) |
 | `JWT_EXPIRES_IN` | No | Token expiry (default: `7d`) |
 | `CLIENT_URL` | No | Production frontend origin for CORS. In development, leave empty — all `localhost` Expo Web ports are allowed automatically. |
@@ -41,15 +42,19 @@ Never commit the real `.env` file.
 # macOS with Homebrew
 brew services start mongodb-community
 
-# Use in .env
+# Use in .env (development data — never wiped by tests)
 MONGODB_URI=mongodb://127.0.0.1:27017/social_platform
+MONGODB_URI_TEST=mongodb://127.0.0.1:27017/social_platform_test
 ```
 
 **MongoDB Atlas:**
 
 1. Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
 2. Create a database user and allow your IP
-3. Copy the connection string into `MONGODB_URI`
+3. Copy the connection string into `MONGODB_URI` (use database name `social_platform`)
+4. For tests, set `MONGODB_URI_TEST` to the same cluster with database name `social_platform_test`
+
+**Important:** Integration tests only clean the test database (`*_test`). They never use or wipe `MONGODB_URI` / `social_platform`.
 
 ## Running
 
@@ -808,15 +813,30 @@ curl "http://localhost:5000/api/users/johndoe/following?page=1&limit=20" \
 
 Uses the same pagination structure and public user fields as the followers endpoint.
 
+### GET /api/users/:username/posts
+
+Return paginated posts authored by the given username. Authentication is optional (includes `likedByMe` when JWT is provided).
+
+**Example:**
+
+```bash
+curl "http://localhost:5000/api/users/johndoe/posts?page=1&limit=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
 ## Testing
 
 ```bash
-# Health check (no MongoDB required)
 npm test
-
-# Auth integration tests require a running MongoDB instance
-MONGODB_URI=mongodb://127.0.0.1:27017/social_platform_test npm test
 ```
+
+Tests connect only to `MONGODB_URI_TEST` (default: `mongodb://127.0.0.1:27017/social_platform_test`). The test suite refuses to run destructive cleanup unless:
+
+- `NODE_ENV=test`
+- the database name ends with `_test`
+- the database name is not `social_platform`
+
+Set `MONGODB_URI_TEST` in `.env` for Atlas (e.g. same cluster, database `social_platform_test`).
 
 When MongoDB is unavailable, auth, posts, likes, comments, users, and follow integration tests are skipped automatically and the health/CORS tests still run.
 

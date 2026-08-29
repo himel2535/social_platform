@@ -76,6 +76,49 @@ const getPosts = async ({ page = DEFAULT_PAGE, limit = DEFAULT_LIMIT, userId } =
   };
 };
 
+const getPostsByUsername = async (
+  username,
+  { page = DEFAULT_PAGE, limit = DEFAULT_LIMIT, userId } = {},
+) => {
+  const User = require('../models/User');
+  const normalizedUsername = username.toLowerCase().trim();
+  const author = await User.findOne({ username: normalizedUsername }).select('_id');
+
+  if (!author) {
+    throw new AppError('User not found', 404);
+  }
+
+  const safePage = Math.max(1, Number(page) || DEFAULT_PAGE);
+  const safeLimit = Math.min(MAX_LIMIT, Math.max(1, Number(limit) || DEFAULT_LIMIT));
+  const skip = (safePage - 1) * safeLimit;
+  const filter = { author: author._id };
+
+  const [posts, total] = await Promise.all([
+    Post.find(filter)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(safeLimit)
+      .populate('author', AUTHOR_FIELDS)
+      .select('content author likes likesCount commentsCount createdAt updatedAt')
+      .lean(),
+    Post.countDocuments(filter),
+  ]);
+
+  const totalPages = total === 0 ? 0 : Math.ceil(total / safeLimit);
+
+  return {
+    posts: posts.map((post) => formatPost(post, userId)),
+    pagination: {
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages,
+      hasNextPage: safePage < totalPages,
+      hasPrevPage: safePage > 1,
+    },
+  };
+};
+
 const likePost = async (postId, userId) => {
   const updated = await Post.findOneAndUpdate(
     { _id: postId, likes: { $ne: userId } },
@@ -123,6 +166,7 @@ const unlikePost = async (postId, userId) => {
 module.exports = {
   createPost,
   getPosts,
+  getPostsByUsername,
   likePost,
   unlikePost,
 };

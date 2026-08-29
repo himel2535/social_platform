@@ -20,6 +20,7 @@ type Props = {
   contentContainerStyle?: ViewStyle;
   scrollViewProps?: ScrollViewProps;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
+  contentPaddingBottom?: number;
 };
 
 export function Screen({
@@ -30,14 +31,19 @@ export function Screen({
   contentContainerStyle,
   scrollViewProps,
   edges = ['top', 'bottom'],
+  contentPaddingBottom,
 }: Props) {
-  const { isTablet } = useResponsive();
+  const { isTablet, isDesktop, isMobile } = useResponsive();
+  const shouldCenter = centered && (isTablet || isDesktop);
+  const bottomPadding =
+    contentPaddingBottom ?? (isMobile ? layout.tabBarHeight + spacing.lg : spacing.lg);
 
   const content = (
     <View
       style={[
         styles.content,
-        centered && isTablet && styles.tabletContent,
+        shouldCenter && styles.centeredContent,
+        { paddingBottom: bottomPadding },
         contentContainerStyle,
       ]}
     >
@@ -75,7 +81,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
   },
-  tabletContent: {
+  centeredContent: {
     maxWidth: layout.maxContentWidth,
     width: '100%',
     alignSelf: 'center',

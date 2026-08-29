@@ -1,10 +1,10 @@
 import { Screen } from '@/components/ui';
 import { UserSearchScreen } from '@/components/search/UserSearchScreen';
 
-export default function SearchScreen() {
+export default function SearchTabScreen() {
   return (
     <Screen scroll contentContainerStyle={{ flexGrow: 1 }}>
-      <UserSearchScreen showBackButton />
+      <UserSearchScreen />
     </Screen>
   );
 }

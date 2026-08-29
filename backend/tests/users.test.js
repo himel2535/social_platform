@@ -9,10 +9,8 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key';
 process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 process.env.NODE_ENV = 'test';
 
-const TEST_DB_URI =
-  process.env.MONGODB_URI_TEST ||
-  process.env.MONGODB_URI ||
-  'mongodb://127.0.0.1:27017/social_platform_test';
+const { getTestDatabaseUri } = require('./helpers/testDb');
+const TEST_DB_URI = getTestDatabaseUri();
 
 const app = require('../src/app');
 const User = require('../src/models/User');
@@ -53,12 +51,12 @@ describe('Users API', async () => {
   }
 
   after(async () => {
-    await clearTestCollections();
+    await clearTestCollections(TEST_DB_URI);
     await mongoose.connection.close();
   });
 
   beforeEach(async () => {
-    await clearTestCollections();
+    await clearTestCollections(TEST_DB_URI);
   });
 
   it('GET /api/users/me — without token returns 401', async () => {
@@ -320,5 +318,53 @@ describe('Users API', async () => {
     assert.equal(first.status, 201);
     assert.equal(second.status, 409);
     assert.match(second.body.message, /username/i);
+  });
+
+  it('GET /api/users/:username/posts — returns user posts', async () => {
+    const { token, user } = await signupAndGetToken();
+    await request(app)
+      .post('/api/posts')
+      .set(authHeader(token))
+      .send({ content: 'Profile post one' });
+    await request(app)
+      .post('/api/posts')
+      .set(authHeader(token))
+      .send({ content: 'Profile post two' });
+
+    const res = await request(app).get(`/api/users/${user.username}/posts`).set(authHeader(token));
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.data.posts.length, 2);
+    assert.equal(res.body.data.posts[0].author.username, user.username);
+    assert.ok(res.body.data.pagination);
+  });
+
+  it('GET /api/users/:username/posts — non-existent user returns 404', async () => {
+    const { token } = await signupAndGetToken();
+
+    const res = await request(app)
+      .get('/api/users/nonexistent_user_xyz/posts')
+      .set(authHeader(token));
+
+    assert.equal(res.status, 404);
+  });
+
+  it('GET /api/users/:username/posts — pagination works', async () => {
+    const { token, user } = await signupAndGetToken();
+
+    for (let i = 1; i <= 5; i += 1) {
+      await request(app)
+        .post('/api/posts')
+        .set(authHeader(token))
+        .send({ content: `User post ${i}` });
+    }
+
+    const page1 = await request(app)
+      .get(`/api/users/${user.username}/posts?page=1&limit=2`)
+      .set(authHeader(token));
+
+    assert.equal(page1.status, 200);
+    assert.equal(page1.body.data.posts.length, 2);
+    assert.equal(page1.body.data.pagination.total, 5);
   });
 });

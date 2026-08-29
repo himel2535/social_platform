@@ -27,9 +27,22 @@ const searchUsers = asyncHandler(async (req, res) => {
   sendSuccess(res, 200, 'Users retrieved successfully', result);
 });
 
+const getUserPosts = asyncHandler(async (req, res) => {
+  const postService = require('../services/post.service');
+  const { page, limit } = req.query;
+  const result = await postService.getPostsByUsername(req.params.username, {
+    page,
+    limit,
+    userId: req.user?._id,
+  });
+
+  sendSuccess(res, 200, 'Posts retrieved successfully', result);
+});
+
 module.exports = {
   getMe,
   getUserByUsername,
   updateMyProfile,
   searchUsers,
+  getUserPosts,
 };

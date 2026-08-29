@@ -12,5 +12,6 @@ export {
   togglePreviewFollow,
   getPreviewFollowers,
   getPreviewFollowing,
+  getPreviewPostsByUsername,
 } from './mockData';
 export type { PreviewNotification } from './mockData';

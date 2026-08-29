@@ -280,3 +280,7 @@ export function searchPreviewUsers(query: string): UserProfile[] {
       user.name.toLowerCase().includes(normalized),
   );
 }
+
+export function getPreviewPostsByUsername(username: string) {
+  return PREVIEW_POSTS.filter((post) => post.author.username === username.toLowerCase());
+}

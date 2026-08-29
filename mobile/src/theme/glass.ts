@@ -32,6 +32,7 @@ export const shadows = {
 
 export const layout = {
   maxContentWidth: 680,
+  sidebarWidth: 240,
   minTouchTarget: 44,
   tabBarHeight: 64,
 } as const;

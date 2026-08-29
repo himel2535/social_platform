@@ -9,10 +9,8 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key';
 process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 process.env.NODE_ENV = 'test';
 
-const TEST_DB_URI =
-  process.env.MONGODB_URI_TEST ||
-  process.env.MONGODB_URI ||
-  'mongodb://127.0.0.1:27017/social_platform_test';
+const { getTestDatabaseUri } = require('./helpers/testDb');
+const TEST_DB_URI = getTestDatabaseUri();
 
 const app = require('../src/app');
 const Follow = require('../src/models/Follow');
@@ -53,12 +51,12 @@ describe('Follow API', async () => {
   }
 
   after(async () => {
-    await clearTestCollections();
+    await clearTestCollections(TEST_DB_URI);
     await mongoose.connection.close();
   });
 
   beforeEach(async () => {
-    await clearTestCollections();
+    await clearTestCollections(TEST_DB_URI);
   });
 
   it('POST /api/users/:username/follow — without token returns 401', async () => {

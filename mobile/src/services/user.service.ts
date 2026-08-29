@@ -1,5 +1,5 @@
 import api from './api';
-import { Pagination } from './post.service';
+import { Pagination, Post } from './post.service';
 
 export type UserProfile = {
   _id: string;
@@ -35,6 +35,11 @@ export type FollowResponse = {
 
 export type UserListResult = {
   users: UserProfile[];
+  pagination: UserSearchPagination;
+};
+
+export type UserPostsResult = {
+  posts: Post[];
   pagination: UserSearchPagination;
 };
 
@@ -117,6 +122,14 @@ export const userService = {
 
   async getFollowing(username: string, page = 1, limit = 20): Promise<UserListResult> {
     const response = await api.get<BackendSuccess<UserListResult>>(`/users/${username}/following`, {
+      params: { page, limit },
+    });
+
+    return response.data.data;
+  },
+
+  async getUserPosts(username: string, page = 1, limit = 10): Promise<UserPostsResult> {
+    const response = await api.get<BackendSuccess<UserPostsResult>>(`/users/${username}/posts`, {
       params: { page, limit },
     });
 
