@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "TechZugram",
+    "owner": "himel2535",
     "slug": "nexus-social",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -52,7 +53,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "883ce3c4-0d60-4b8a-9871-9a032f0e5702"
       }
     }
   }
