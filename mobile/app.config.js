@@ -14,9 +14,6 @@ module.exports = ({ config }) => ({
   ...config,
   android: {
     ...config.android,
-    googleServicesFile:
-      injectedGoogleServicesPath && fs.existsSync(injectedGoogleServicesPath)
-        ? injectedGoogleServicesPath
-        : LOCAL_GOOGLE_SERVICES_FILE,
+    googleServicesFile: LOCAL_GOOGLE_SERVICES_FILE,
   },
 });
