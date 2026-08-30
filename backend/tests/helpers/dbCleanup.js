@@ -1,5 +1,6 @@
 const Comment = require('../../src/models/Comment');
 const Follow = require('../../src/models/Follow');
+const Notification = require('../../src/models/Notification');
 const Post = require('../../src/models/Post');
 const User = require('../../src/models/User');
 const { assertSafeTestDatabase } = require('./testDb');
@@ -7,6 +8,7 @@ const { assertSafeTestDatabase } = require('./testDb');
 async function clearTestCollections(uri) {
   assertSafeTestDatabase(uri);
 
+  await Notification.deleteMany({});
   await Comment.deleteMany({});
   await Follow.deleteMany({});
   await Post.deleteMany({});

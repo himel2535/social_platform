@@ -1,6 +1,7 @@
 const Follow = require('../models/Follow');
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
+const notificationService = require('./notification.service');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -74,6 +75,11 @@ const followUser = async (followerId, targetUsername) => {
     await Follow.create({
       follower: followerId,
       following: targetUser._id,
+    });
+    await notificationService.createAndNotify({
+      recipientId: targetUser._id,
+      actorId: followerId,
+      type: 'follow',
     });
   } catch (error) {
     if (error.code !== 11000) {

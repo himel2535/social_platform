@@ -48,6 +48,7 @@ const userSchema = new mongoose.Schema(
     fcmTokens: {
       type: [String],
       default: [],
+      select: false,
     },
   },
   {
@@ -66,6 +67,30 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
+};
+
+userSchema.statics.addFcmToken = async function (userId, token) {
+  if (!token || typeof token !== 'string') {
+    return;
+  }
+
+  await this.updateOne({ _id: userId }, { $addToSet: { fcmTokens: token } });
+};
+
+userSchema.statics.removeFcmToken = async function (userId, token) {
+  if (!token || typeof token !== 'string') {
+    return;
+  }
+
+  await this.updateOne({ _id: userId }, { $pull: { fcmTokens: token } });
+};
+
+userSchema.statics.removeFcmTokens = async function (userId, tokens) {
+  if (!Array.isArray(tokens) || tokens.length === 0) {
+    return;
+  }
+
+  await this.updateOne({ _id: userId }, { $pull: { fcmTokens: { $in: tokens } } });
 };
 
 userSchema.virtual('avatarFallback').get(function () {

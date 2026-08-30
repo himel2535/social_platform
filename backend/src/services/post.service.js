@@ -1,5 +1,6 @@
 const Post = require('../models/Post');
 const AppError = require('../utils/AppError');
+const notificationService = require('./notification.service');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
@@ -124,9 +125,18 @@ const likePost = async (postId, userId) => {
     { _id: postId, likes: { $ne: userId } },
     { $addToSet: { likes: userId }, $inc: { likesCount: 1 } },
     { new: true }
-  ).select('likesCount');
+  ).select('likesCount author');
 
   if (updated) {
+    if (updated.author.toString() !== userId.toString()) {
+      await notificationService.createAndNotify({
+        recipientId: updated.author,
+        actorId: userId,
+        type: 'like',
+        postId,
+      });
+    }
+
     return { liked: true, likesCount: updated.likesCount };
   }
 

@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
+const FCM_TOKEN_KEY = 'fcm_device_token';
 
 const isWeb = Platform.OS === 'web';
 
@@ -68,6 +69,18 @@ export async function getUser(): Promise<string | null> {
 
 export async function removeUser(): Promise<void> {
   await removeItem(USER_KEY);
+}
+
+export async function saveFcmToken(token: string): Promise<void> {
+  await setItem(FCM_TOKEN_KEY, token);
+}
+
+export async function getFcmToken(): Promise<string | null> {
+  return getItem(FCM_TOKEN_KEY);
+}
+
+export async function removeFcmToken(): Promise<void> {
+  await removeItem(FCM_TOKEN_KEY);
 }
 
 export async function clearAuthStorage(): Promise<void> {

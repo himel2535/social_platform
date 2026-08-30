@@ -1,6 +1,7 @@
 const Comment = require('../models/Comment');
 const Post = require('../models/Post');
 const AppError = require('../utils/AppError');
+const notificationService = require('./notification.service');
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -64,7 +65,7 @@ const getComments = async (postId, { page = DEFAULT_PAGE, limit = DEFAULT_LIMIT 
 };
 
 const createComment = async (postId, userId, content) => {
-  const post = await Post.findById(postId).select('_id');
+  const post = await Post.findById(postId).select('_id author');
   if (!post) {
     throw new AppError('Post not found', 404);
   }
@@ -80,6 +81,16 @@ const createComment = async (postId, userId, content) => {
     { $inc: { commentsCount: 1 } },
     { new: true }
   ).select('commentsCount');
+
+  if (post.author.toString() !== userId.toString()) {
+    await notificationService.createAndNotify({
+      recipientId: post.author,
+      actorId: userId,
+      type: 'comment',
+      postId,
+      commentId: comment._id,
+    });
+  }
 
   const populated = await Comment.findById(comment._id)
     .populate('author', AUTHOR_FIELDS)

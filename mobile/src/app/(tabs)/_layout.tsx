@@ -10,11 +10,13 @@ import { DesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useNotifications } from '@/context/NotificationContext';
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const { isPreviewMode } = usePreview();
   const { isDesktop } = useResponsive();
+  const { unreadCount } = useNotifications();
 
   if (isLoading) {
     return (
@@ -73,6 +75,8 @@ export default function TabsLayout() {
         name="notifications"
         options={{
           title: 'Alerts',
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.error },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="notifications-outline" size={size} color={color} />
           ),

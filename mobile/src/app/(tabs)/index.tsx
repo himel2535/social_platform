@@ -24,6 +24,7 @@ import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 import { cachePosts } from '@/utils/postCache';
 import { useToggleLike } from '@/hooks/useToggleLike';
+import { useNotifications } from '@/context/NotificationContext';
 
 const PAGE_LIMIT = 10;
 
@@ -43,6 +44,7 @@ export default function FeedScreen() {
   const { isPreviewMode } = usePreview();
   const { isAuthenticated } = useAuth();
   const { isDesktop } = useResponsive();
+  const { unreadCount } = useNotifications();
   const router = useRouter();
 
   const [previewPosts, setPreviewPosts] = useState<Post[]>(PREVIEW_POSTS);
@@ -269,7 +271,7 @@ export default function FeedScreen() {
                   accessibilityLabel="Notifications"
                   onPress={() => router.push('/(tabs)/notifications')}
                 />
-                <Badge dot style={styles.badge} />
+                {unreadCount > 0 ? <Badge count={unreadCount} style={styles.badge} /> : null}
               </View>
               <AccountMenu size={32} />
             </View>

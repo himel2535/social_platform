@@ -9,6 +9,10 @@ export type PreviewNotification = {
   body: string;
   timestamp: string;
   read?: boolean;
+  type?: 'like' | 'comment' | 'follow' | 'system';
+  postId?: string;
+  username?: string;
+  avatar?: string | null;
 };
 
 const hoursAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -113,6 +117,9 @@ export const PREVIEW_NOTIFICATIONS: PreviewNotification[] = [
     body: 'liked your post',
     timestamp: hoursAgo(1),
     read: false,
+    type: 'like',
+    postId: 'preview-1',
+    username: 'alexchen',
   },
   {
     id: 'notif-2',
@@ -120,6 +127,9 @@ export const PREVIEW_NOTIFICATIONS: PreviewNotification[] = [
     body: 'commented on your post: "The UI polish is really coming together."',
     timestamp: hoursAgo(3),
     read: false,
+    type: 'comment',
+    postId: 'preview-1',
+    username: 'samrivera',
   },
   {
     id: 'notif-3',
@@ -127,6 +137,8 @@ export const PREVIEW_NOTIFICATIONS: PreviewNotification[] = [
     body: 'started following you',
     timestamp: daysAgo(1),
     read: true,
+    type: 'follow',
+    username: 'jordanlee',
   },
   {
     id: 'notif-4',
@@ -134,6 +146,7 @@ export const PREVIEW_NOTIFICATIONS: PreviewNotification[] = [
     body: `Welcome to ${APP_NAME}! Start by creating your first post.`,
     timestamp: daysAgo(2),
     read: true,
+    type: 'system',
   },
 ];
 

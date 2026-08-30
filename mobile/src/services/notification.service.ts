@@ -2,6 +2,8 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import api from './api';
+import { Pagination } from './post.service';
+import { getFcmToken, removeFcmToken, saveFcmToken } from '@/utils/storage';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -13,6 +15,56 @@ Notifications.setNotificationHandler({
   }),
 });
 
+export type NotificationActor = {
+  _id: string;
+  name: string;
+  username: string;
+  avatar?: string | null;
+};
+
+export type NotificationType = 'like' | 'comment' | 'follow';
+
+export type AppNotification = {
+  _id: string;
+  type: NotificationType;
+  read: boolean;
+  createdAt: string;
+  actor: NotificationActor | null;
+  post: { _id: string } | null;
+  comment: { _id: string } | null;
+};
+
+export type NotificationsResponse = {
+  notifications: AppNotification[];
+  unreadCount: number;
+  pagination: Pagination;
+};
+
+type BackendSuccess<T> = {
+  success: true;
+  message: string;
+  data: T;
+};
+
+type NotificationHandlers = {
+  onReceived?: (notification: Notifications.Notification) => void;
+  onTap?: (data: Record<string, string>) => void;
+};
+
+const toDataRecord = (data: unknown): Record<string, string> => {
+  if (!data || typeof data !== 'object') {
+    return {};
+  }
+
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+    if (value != null) {
+      result[key] = String(value);
+    }
+  }
+  return result;
+};
+
 export const notificationService = {
   async requestPermissions(): Promise<boolean> {
     if (!Device.isDevice) {
@@ -21,14 +73,16 @@ export const notificationService = {
     }
 
     const { status: existing } = await Notifications.getPermissionsAsync();
-    let finalStatus = existing;
-
-    if (existing !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+    if (existing === 'granted') {
+      return true;
     }
 
-    return finalStatus === 'granted';
+    if (existing !== 'undetermined') {
+      return false;
+    }
+
+    const { status } = await Notifications.requestPermissionsAsync();
+    return status === 'granted';
   },
 
   async getFCMToken(): Promise<string | null> {
@@ -52,22 +106,67 @@ export const notificationService = {
     }
   },
 
-  async registerTokenWithBackend(token: string): Promise<void> {
+  async getNotifications(page = 1, limit = 20): Promise<NotificationsResponse> {
+    const response = await api.get<BackendSuccess<NotificationsResponse>>('/notifications', {
+      params: { page, limit },
+    });
+    return response.data.data;
+  },
+
+  async markAsRead(id: string): Promise<AppNotification> {
+    const response = await api.patch<BackendSuccess<{ notification: AppNotification }>>(
+      `/notifications/${id}/read`,
+    );
+    return response.data.data.notification;
+  },
+
+  async markAllAsRead(): Promise<void> {
+    await api.patch('/notifications/read-all');
+  },
+
+  async registerDeviceToken(token: string): Promise<void> {
     try {
-      await api.post('/users/fcm-token', { token });
+      await api.post('/notifications/device-token', { token });
+      await saveFcmToken(token);
     } catch (error) {
       console.warn('[Notifications] Failed to register token with backend:', error);
     }
   },
 
-  setupNotificationHandlers(onNotificationTap?: (data: Record<string, string>) => void): () => void {
+  async removeDeviceToken(token?: string): Promise<void> {
+    const stored = token ?? (await getFcmToken());
+    if (!stored) {
+      return;
+    }
+
+    try {
+      await api.delete('/notifications/device-token', { data: { token: stored } });
+    } catch (error) {
+      console.warn('[Notifications] Failed to remove token from backend:', error);
+    } finally {
+      await removeFcmToken();
+    }
+  },
+
+  async getLastNotificationData(): Promise<Record<string, string> | null> {
+    try {
+      const response = await Notifications.getLastNotificationResponseAsync();
+      if (!response) {
+        return null;
+      }
+      return toDataRecord(response.notification.request.content.data);
+    } catch {
+      return null;
+    }
+  },
+
+  setupNotificationHandlers(handlers: NotificationHandlers = {}): () => void {
     const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('[Notifications] Received in foreground:', notification.request.content.title);
+      handlers.onReceived?.(notification);
     });
 
     const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as Record<string, string>;
-      onNotificationTap?.(data);
+      handlers.onTap?.(toDataRecord(response.notification.request.content.data));
     });
 
     return () => {

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Typography } from '@/components/ui';
+import { Badge, Typography } from '@/components/ui';
 import { AccountMenu } from '@/components/navigation/AccountMenu';
 import { colors } from '@/theme/colors';
 import { glass, layout } from '@/theme/glass';
@@ -10,6 +10,7 @@ import { spacing } from '@/theme/spacing';
 import { APP_NAME } from '@/constants/branding';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
+import { useNotifications } from '@/context/NotificationContext';
 
 type NavItem = {
   label: string;
@@ -37,6 +38,7 @@ export function DesktopSidebar() {
   const activeSegment = segments[1] || 'index';
   const { logout, isAuthenticated } = useAuth();
   const { isPreviewMode, exitPreview } = usePreview();
+  const { unreadCount } = useNotifications();
 
   const handleLogout = async () => {
     if (isPreviewMode) {
@@ -70,9 +72,15 @@ export function DesktopSidebar() {
                 size={20}
                 color={active ? colors.primary : colors.textSecondary}
               />
-              <Typography variant="postContent" style={active ? styles.activeLabel : undefined}>
+              <Typography
+                variant="postContent"
+                style={[styles.navLabel, active ? styles.activeLabel : undefined]}
+              >
                 {item.label}
               </Typography>
+              {item.segment === 'notifications' && unreadCount > 0 ? (
+                <Badge count={unreadCount} />
+              ) : null}
             </Pressable>
           );
         })}
@@ -123,6 +131,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: 12,
+  },
+  navLabel: {
+    flex: 1,
   },
   navItemActive: {
     backgroundColor: 'rgba(124, 58, 237, 0.15)',

@@ -126,7 +126,11 @@ API endpoints will be implemented in subsequent phases:
 | POST | `/api/posts/:id/like` | Phase 4 |
 | POST | `/api/posts/:id/comment` | Phase 5 |
 | GET | `/api/posts/:id/comments` | Phase 5 |
-| POST | `/api/users/fcm-token` | Phase 10 |
+| GET | `/api/notifications` | Phase 10 |
+| PATCH | `/api/notifications/:id/read` | Phase 10 |
+| PATCH | `/api/notifications/read-all` | Phase 10 |
+| POST | `/api/notifications/device-token` | Phase 10 |
+| DELETE | `/api/notifications/device-token` | Phase 10 |
 
 ## Firebase Setup
 

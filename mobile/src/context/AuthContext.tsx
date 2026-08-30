@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { User, authService, SignupData, LoginData } from '@/services/auth.service';
 import { ApiError, setUnauthorizedHandler } from '@/services/api';
-import { getToken, saveToken, clearAuthStorage, getUser, saveUser } from '@/utils/storage';
+import { getToken, saveToken, clearAuthStorage, getUser, saveUser, getFcmToken, removeFcmToken } from '@/utils/storage';
+import { notificationService } from '@/services/notification.service';
 
 type AuthContextValue = {
   user: User | null;
@@ -21,11 +22,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const loggingOutRef = useRef(false);
 
   const logout = useCallback(async () => {
-    setUser(null);
-    setToken(null);
-    await clearAuthStorage();
+    if (loggingOutRef.current) {
+      return;
+    }
+
+    loggingOutRef.current = true;
+    try {
+      const fcmToken = await getFcmToken();
+      if (fcmToken) {
+        await notificationService.removeDeviceToken(fcmToken);
+      } else {
+        await removeFcmToken();
+      }
+      setUser(null);
+      setToken(null);
+      await clearAuthStorage();
+    } finally {
+      loggingOutRef.current = false;
+    }
   }, []);
 
   const restoreSession = useCallback(async () => {

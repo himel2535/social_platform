@@ -30,7 +30,7 @@ Configure `.env` with your values (see below).
 | `CORS_ORIGIN` | No | Production fallback: comma-separated extra allowed origins |
 | `FIREBASE_PROJECT_ID` | Phase 10+ | Firebase project ID |
 | `FIREBASE_CLIENT_EMAIL` | Phase 10+ | Service account email |
-| `FIREBASE_PRIVATE_KEY` | Phase 10+ | Service account private key |
+| `FIREBASE_PRIVATE_KEY` | Phase 10+ | Service account private key. Wrap newlines as `\\n`. Leave empty to disable push locally. |
 
 Never commit the real `.env` file.
 

@@ -11,9 +11,17 @@ type Props = {
   timestamp: string | Date;
   read?: boolean;
   onPress?: () => void;
+  avatarUri?: string | null;
 };
 
-export function NotificationItem({ title, body, timestamp, read = false, onPress }: Props) {
+export function NotificationItem({
+  title,
+  body,
+  timestamp,
+  read = false,
+  onPress,
+  avatarUri,
+}: Props) {
   return (
     <TouchableOpacity
       style={[styles.container, !read && styles.unread]}
@@ -21,7 +29,7 @@ export function NotificationItem({ title, body, timestamp, read = false, onPress
       activeOpacity={0.7}
       accessibilityRole="button"
     >
-      <Avatar name={title} size={40} />
+      <Avatar name={title} uri={avatarUri} size={40} />
       <View style={styles.content}>
         <Typography variant="userName">{title}</Typography>
         <Typography variant="postContent" numberOfLines={2}>
