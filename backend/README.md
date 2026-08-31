@@ -360,6 +360,33 @@ Duplicate unlike requests are safe and idempotent.
 - `:id` must be a valid MongoDB ObjectId (400 if malformed)
 - Post must exist (404 if not found)
 
+### DELETE /api/posts/:id
+
+Delete a post. Only the post author can delete their own post.
+
+**Example:**
+
+```bash
+curl -X DELETE http://localhost:5000/api/posts/POST_ID \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Post deleted successfully"
+}
+```
+
+**Authorization:**
+
+- Post author → 200
+- Other users → 403
+- Post not found → 404
+- Invalid post ID → 400
+
 ## Comments Endpoints
 
 All comment endpoints require authentication:
@@ -824,6 +851,403 @@ curl "http://localhost:5000/api/users/johndoe/posts?page=1&limit=10" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+## Conversations & Messages Endpoints
+
+All conversation endpoints require authentication:
+
+```
+Authorization: Bearer <token>
+```
+
+Messages are sent and received in real time via Socket.io (see [Socket.io Events](#socketio-events) below). REST endpoints provide conversation list and message history.
+
+### GET /api/conversations
+
+Return all conversations for the authenticated user, sorted by most recent activity.
+
+**Example:**
+
+```bash
+curl http://localhost:5000/api/conversations \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Conversations retrieved successfully",
+  "data": {
+    "conversations": [
+      {
+        "conversationId": "userId1_userId2",
+        "participant": {
+          "_id": "...",
+          "name": "Jane Doe",
+          "username": "janedoe",
+          "avatar": null
+        },
+        "lastMessage": {
+          "text": "Hello!",
+          "senderId": "...",
+          "createdAt": "...",
+          "type": "text",
+          "postId": null
+        },
+        "lastMessageAt": "...",
+        "unreadCount": 2
+      }
+    ]
+  }
+}
+```
+
+### GET /api/conversations/:userId/messages
+
+Return paginated message history with a specific user. Messages are returned newest-first; the client reverses for display.
+
+**Query parameters:**
+
+| Parameter | Default | Max | Description |
+|-----------|---------|-----|-------------|
+| `limit` | `30` | `50` | Messages per page |
+| `before` | — | — | Message `_id` cursor for loading older messages |
+
+**Example:**
+
+```bash
+curl "http://localhost:5000/api/conversations/USER_ID/messages?limit=30" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Messages retrieved successfully",
+  "data": {
+    "conversationId": "userId1_userId2",
+    "messages": [
+      {
+        "_id": "...",
+        "conversationId": "userId1_userId2",
+        "senderId": "...",
+        "receiverId": "...",
+        "type": "text",
+        "text": "Hello!",
+        "postId": null,
+        "readAt": null,
+        "createdAt": "..."
+      }
+    ],
+    "pagination": {
+      "limit": 30,
+      "hasMore": false,
+      "nextBefore": null
+    }
+  }
+}
+```
+
+**Message types:**
+
+| Type | Fields | Description |
+|------|--------|-------------|
+| `text` | `text` required | Standard text message (1–2000 chars) |
+| `shared_post` | `postId` required | Shared post reference; `text` defaults to `"Shared a post"` |
+
+## Notifications Endpoints
+
+All notification endpoints require authentication:
+
+```
+Authorization: Bearer <token>
+```
+
+Notification types: `like`, `comment`, `follow`, `message`.
+
+### GET /api/notifications
+
+Return paginated notifications and unread count for the authenticated user.
+
+**Query parameters:**
+
+| Parameter | Default | Max | Description |
+|-----------|---------|-----|-------------|
+| `page` | `1` | — | Page number |
+| `limit` | `20` | `50` | Notifications per page |
+
+**Example:**
+
+```bash
+curl "http://localhost:5000/api/notifications?page=1&limit=20" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Success response (200):**
+
+```json
+{
+  "success": true,
+  "message": "Notifications retrieved successfully",
+  "data": {
+    "notifications": [
+      {
+        "_id": "...",
+        "type": "like",
+        "read": false,
+        "createdAt": "...",
+        "actor": {
+          "_id": "...",
+          "name": "Jane Doe",
+          "username": "janedoe",
+          "avatar": null
+        },
+        "post": { "_id": "..." },
+        "comment": null,
+        "conversationId": null
+      }
+    ],
+    "unreadCount": 3,
+    "pagination": {
+      "page": 1,
+      "limit": 20,
+      "total": 3,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
+  }
+}
+```
+
+For `message` notifications, `conversationId` is populated and `post`/`comment` are null.
+
+### PATCH /api/notifications/:id/read
+
+Mark a single notification as read.
+
+**Example:**
+
+```bash
+curl -X PATCH http://localhost:5000/api/notifications/NOTIFICATION_ID/read \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### PATCH /api/notifications/read-all
+
+Mark all notifications as read for the authenticated user.
+
+**Example:**
+
+```bash
+curl -X PATCH http://localhost:5000/api/notifications/read-all \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### POST /api/notifications/device-token
+
+Register an FCM device token for push notifications.
+
+**Request:**
+
+```json
+{
+  "token": "fcm-device-token-string"
+}
+```
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:5000/api/notifications/device-token \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"token":"YOUR_FCM_TOKEN"}'
+```
+
+### DELETE /api/notifications/device-token
+
+Remove an FCM device token (e.g. on logout).
+
+**Request:**
+
+```json
+{
+  "token": "fcm-device-token-string"
+}
+```
+
+**Example:**
+
+```bash
+curl -X DELETE http://localhost:5000/api/notifications/device-token \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"token":"YOUR_FCM_TOKEN"}'
+```
+
+## Socket.io Events
+
+Socket.io runs on the same HTTP server as the REST API (no `/api` prefix). Connect with JWT authentication in the handshake:
+
+```js
+const socket = io('http://localhost:5000', {
+  auth: { token: 'YOUR_JWT_TOKEN' }
+});
+```
+
+On connection, the server joins the socket to room `user:<userId>` for targeted delivery.
+
+### Client → Server Events
+
+#### send_message
+
+Send a text or shared-post message. Uses an acknowledgment callback.
+
+**Payload:**
+
+```json
+{
+  "receiverId": "USER_OBJECT_ID",
+  "text": "Hello!",
+  "type": "text",
+  "postId": null
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `receiverId` | Yes | Recipient user ID |
+| `text` | For `text` type | Message body (1–2000 chars) |
+| `type` | No | `text` (default) or `shared_post` |
+| `postId` | For `shared_post` | Post ID to share |
+
+**Ack success:**
+
+```json
+{
+  "success": true,
+  "message": "Message sent",
+  "data": {
+    "message": { "_id": "...", "type": "text", "text": "Hello!", "...": "..." },
+    "conversation": { "conversationId": "...", "...": "..." }
+  }
+}
+```
+
+**Ack error:**
+
+```json
+{
+  "success": false,
+  "message": "Too many messages. Please slow down.",
+  "code": "RATE_LIMITED"
+}
+```
+
+#### mark_read
+
+Mark all messages in a conversation as read.
+
+**Payload:** `{ "conversationId": "userId1_userId2" }`
+
+**Ack success:**
+
+```json
+{
+  "success": true,
+  "message": "Messages marked as read",
+  "data": {
+    "conversationId": "...",
+    "readByUserId": "...",
+    "readAt": "..."
+  }
+}
+```
+
+#### user_typing / user_stopped_typing
+
+**Payload:** `{ "receiverId": "USER_OBJECT_ID" }`
+
+No acknowledgment. Emits to receiver's room.
+
+### Server → Client Events
+
+#### new_message
+
+Emitted to both sender and receiver after a successful `send_message`.
+
+```json
+{
+  "message": {
+    "_id": "...",
+    "conversationId": "...",
+    "senderId": "...",
+    "receiverId": "...",
+    "type": "text",
+    "text": "Hello!",
+    "postId": null,
+    "readAt": null,
+    "createdAt": "..."
+  },
+  "conversation": {
+    "conversationId": "...",
+    "lastMessage": { "text": "Hello!", "senderId": "...", "createdAt": "..." },
+    "lastMessageAt": "...",
+    "unreadCount": 1
+  }
+}
+```
+
+#### messages_read
+
+Emitted to the other participant when messages are marked read.
+
+```json
+{
+  "conversationId": "...",
+  "readByUserId": "...",
+  "readAt": "..."
+}
+```
+
+#### user_typing / user_stopped_typing
+
+```json
+{
+  "conversationId": "userId1_userId2",
+  "userId": "TYPING_USER_ID"
+}
+```
+
+#### error
+
+```json
+{
+  "message": "Validation error description",
+  "code": "VALIDATION_ERROR"
+}
+```
+
+Error codes: `VALIDATION_ERROR`, `NOT_FOUND`, `RATE_LIMITED`, `SERVER_ERROR`.
+
+### Push on Offline Receiver
+
+When `send_message` succeeds and the receiver has no active socket in room `user:<receiverId>`, the server creates a `message` notification and sends an FCM push with data:
+
+```json
+{
+  "type": "message",
+  "senderId": "...",
+  "conversationId": "...",
+  "actorUsername": "...",
+  "notificationId": "..."
+}
+```
+
 ## Testing
 
 ```bash
@@ -856,33 +1280,45 @@ src/
 ├── models/       # Mongoose schemas
 ├── routes/       # Route definitions
 ├── services/     # Business logic
+├── socket/       # Socket.io auth and message handlers
 ├── validators/   # Input validation
 └── utils/        # Helpers (JWT, responses, errors)
 ```
 
 ## API Routes
 
-| Method | Endpoint | Auth | Phase |
-|--------|----------|------|-------|
-| GET | `/api/health` | No | 1 |
-| POST | `/api/auth/signup` | No | 2 |
-| POST | `/api/auth/login` | No | 2 |
-| GET | `/api/auth/me` | Yes | 2 |
-| POST | `/api/posts` | Yes | 4 |
-| GET | `/api/posts` | Yes | 4 |
-| POST | `/api/posts/:id/like` | Yes | 6 |
-| DELETE | `/api/posts/:id/like` | Yes | 6 |
-| GET | `/api/posts/:id/comments` | Yes | 7 |
-| POST | `/api/posts/:id/comments` | Yes | 7 |
-| DELETE | `/api/comments/:id` | Yes | 7 |
-| GET | `/api/users/me` | Yes | 8 |
-| PATCH | `/api/users/me` | Yes | 8 |
-| GET | `/api/users/:username` | No | 8 |
-| GET | `/api/users/search` | Yes | 8 |
-| POST | `/api/users/:username/follow` | Yes | 9 |
-| DELETE | `/api/users/:username/follow` | Yes | 9 |
-| GET | `/api/users/:username/followers` | Yes | 9 |
-| GET | `/api/users/:username/following` | Yes | 9 |
+| Method | Endpoint | Auth |
+|--------|----------|------|
+| GET | `/api/health` | No |
+| POST | `/api/auth/signup` | No |
+| POST | `/api/auth/login` | No |
+| GET | `/api/auth/me` | Yes |
+| POST | `/api/posts` | Yes |
+| GET | `/api/posts` | Yes |
+| DELETE | `/api/posts/:id` | Yes |
+| POST | `/api/posts/:id/like` | Yes |
+| DELETE | `/api/posts/:id/like` | Yes |
+| GET | `/api/posts/:id/comments` | Yes |
+| POST | `/api/posts/:id/comments` | Yes |
+| DELETE | `/api/comments/:id` | Yes |
+| GET | `/api/users/me` | Yes |
+| PATCH | `/api/users/me` | Yes |
+| GET | `/api/users/:username` | No |
+| GET | `/api/users/search` | Yes |
+| GET | `/api/users/:username/posts` | Optional |
+| POST | `/api/users/:username/follow` | Yes |
+| DELETE | `/api/users/:username/follow` | Yes |
+| GET | `/api/users/:username/followers` | Yes |
+| GET | `/api/users/:username/following` | Yes |
+| GET | `/api/conversations` | Yes |
+| GET | `/api/conversations/:userId/messages` | Yes |
+| GET | `/api/notifications` | Yes |
+| PATCH | `/api/notifications/:id/read` | Yes |
+| PATCH | `/api/notifications/read-all` | Yes |
+| POST | `/api/notifications/device-token` | Yes |
+| DELETE | `/api/notifications/device-token` | Yes |
+
+Real-time messaging uses Socket.io events documented above (`send_message`, `mark_read`, `user_typing`, `user_stopped_typing`, `new_message`, `messages_read`, `error`).
 
 ## Security
 
@@ -898,9 +1334,13 @@ src/
 
 ## Mobile Integration Notes
 
-The mobile app (`mobile/src/services/auth.service.ts`) expects:
+The mobile app expects:
 
-- Signup/login: `{ user, token }` inside `data` (Phase 3 will wire this)
+- Signup/login: `{ user, token }` inside `data`
 - GET `/auth/me`: user object inside `data.user`
 - Errors: `{ message: string }` minimum
 - JWT payload uses `id` matching MongoDB `_id`
+- Socket.io: connect to host without `/api`, auth via `{ auth: { token } }`
+- Push: register FCM token via `POST /api/notifications/device-token`
+
+See the root [README.md](../README.md) and [mobile/README.md](../mobile/README.md) for full mobile setup.
