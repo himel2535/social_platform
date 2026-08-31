@@ -21,6 +21,14 @@ const PUSH_COPY = {
   message: (name) => ({ title: name, body: 'Sent you a message' }),
 };
 
+let socketIo = null;
+
+const getUserRoom = (userId) => `user:${userId.toString()}`;
+
+const setSocketIo = (io) => {
+  socketIo = io;
+};
+
 const stringifyData = (data = {}) => {
   const payload = {};
 
@@ -160,6 +168,47 @@ const persistNotification = async ({
   });
 };
 
+const emitLiveNotification = async (notification) => {
+  if (!socketIo || !notification?.recipient) {
+    return;
+  }
+
+  try {
+    const populated = await Notification.findById(notification._id)
+      .populate('actor', ACTOR_FIELDS)
+      .lean();
+
+    if (!populated) {
+      return;
+    }
+
+    const unreadCount = await Notification.countDocuments({
+      recipient: notification.recipient,
+      read: false,
+    });
+
+    socketIo.to(getUserRoom(notification.recipient)).emit('new_notification', {
+      notification: formatNotification(populated),
+      unreadCount,
+    });
+  } catch (error) {
+    console.error('[Notification] Failed to emit live notification:', error.message);
+  }
+};
+
+const isRecipientOnline = async (recipientId) => {
+  if (!socketIo || !recipientId) {
+    return false;
+  }
+
+  try {
+    const sockets = await socketIo.in(getUserRoom(recipientId)).fetchSockets();
+    return sockets.length > 0;
+  } catch {
+    return false;
+  }
+};
+
 const sendPushForNotification = async (notification) => {
   const actor = await User.findById(notification.actor).select('name username');
   const actorName = actor?.name || 'Someone';
@@ -175,6 +224,7 @@ const sendPushForNotification = async (notification) => {
       type: notification.type,
       notificationId: notification._id,
       actorUsername: actor?.username || '',
+      actorName: actorName,
       senderId: notification.actor || undefined,
       conversationId: notification.conversationId || undefined,
       postId: notification.post || undefined,
@@ -213,7 +263,12 @@ const createAndNotify = async ({
       return null;
     }
 
-    void sendPushForNotification(notification);
+    void emitLiveNotification(notification);
+
+    const recipientOnline = await isRecipientOnline(recipientId);
+    if (!recipientOnline) {
+      void sendPushForNotification(notification);
+    }
 
     return notification;
   } catch (error) {
@@ -287,6 +342,7 @@ const removeDeviceToken = async (userId, token) => {
 };
 
 module.exports = {
+  setSocketIo,
   sendNotification,
   sendPushToUser,
   createAndNotify,

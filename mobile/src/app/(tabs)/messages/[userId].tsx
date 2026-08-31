@@ -56,7 +56,7 @@ export default function ConversationScreen() {
   }>();
   const goBack = useSafeBack('/messages');
   const { user } = useAuth();
-  const { socket } = useSocket();
+  const { socket, isConnected, connectionError, subscribeReconnect } = useSocket();
   const { conversations, registerActiveThread, upsertConversation, refreshConversations } =
     useMessaging();
   const { showToast } = useToast();
@@ -177,6 +177,16 @@ export default function ConversationScreen() {
   }, [loadMessages, userId]);
 
   useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
+    return subscribeReconnect(() => {
+      void loadMessages();
+    });
+  }, [loadMessages, subscribeReconnect, userId]);
+
+  useEffect(() => {
     if (!userId || !user) {
       return;
     }
@@ -274,7 +284,10 @@ export default function ConversationScreen() {
   }, [hasMore, loadMessages, nextBefore]);
 
   const handleSend = useCallback(async () => {
-    if (!socket || !user || !userId || !inputText.trim() || sending) {
+    if (!socket || !isConnected || !user || !userId || !inputText.trim() || sending) {
+      if (!isConnected && inputText.trim()) {
+        showToast('Reconnecting… try again in a moment', 'error');
+      }
       return;
     }
 
@@ -349,6 +362,7 @@ export default function ConversationScreen() {
     sending,
     showToast,
     socket,
+    isConnected,
     upsertConversation,
     user,
     userId,
@@ -396,6 +410,14 @@ export default function ConversationScreen() {
           ) : null}
         </View>
       </View>
+
+      {!isConnected ? (
+        <View style={styles.connectionBanner}>
+          <Typography variant="metadata" style={styles.connectionBannerText}>
+            {connectionError ? 'Connection lost. Reconnecting…' : 'Connecting…'}
+          </Typography>
+        </View>
+      ) : null}
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -459,6 +481,15 @@ const styles = StyleSheet.create({
   headerInfo: {
     flex: 1,
     gap: 2,
+  },
+  connectionBanner: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    backgroundColor: 'rgba(251, 191, 36, 0.12)',
+  },
+  connectionBannerText: {
+    color: colors.secondary,
+    textAlign: 'center',
   },
   listContent: {
     paddingVertical: spacing.md,

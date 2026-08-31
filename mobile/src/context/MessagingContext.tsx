@@ -62,7 +62,7 @@ const TYPING_IDLE_MS = 3000;
 const MessagingContext = createContext<MessagingContextValue | null>(null);
 
 export function MessagingProvider({ children }: { children: React.ReactNode }) {
-  const { socket } = useSocket();
+  const { socket, subscribeReconnect } = useSocket();
   const { user, isAuthenticated, isLoading } = useAuth();
   const { isPreviewMode } = usePreview();
   const { showToast } = useToast();
@@ -189,6 +189,12 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
   }, [isLoading, refreshConversations]);
 
   useEffect(() => {
+    return subscribeReconnect(() => {
+      void refreshConversations();
+    });
+  }, [refreshConversations, subscribeReconnect]);
+
+  useEffect(() => {
     return () => {
       Object.values(typingTimeoutsRef.current).forEach(clearTimeout);
     };
@@ -248,14 +254,6 @@ export function MessagingProvider({ children }: { children: React.ReactNode }) {
       if (activeThreadHandlersRef.current) {
         activeThreadHandlersRef.current.onMessagesRead(payload);
       }
-
-      setConversations((current) =>
-        current.map((conversation) =>
-          conversation.conversationId === payload.conversationId
-            ? { ...conversation, unreadCount: 0 }
-            : conversation,
-        ),
-      );
     };
 
     const handleTyping = (payload: TypingPayload) => {

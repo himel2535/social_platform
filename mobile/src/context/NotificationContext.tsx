@@ -2,9 +2,16 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { AppState } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview, PREVIEW_NOTIFICATIONS } from '@/preview';
-import { notificationService } from '@/services/notification.service';
+import { useSocket } from '@/context/SocketContext';
+import { AppNotification, notificationService } from '@/services/notification.service';
+import { notifyNewNotification } from '@/utils/notificationEvents';
 
 const BADGE_REFRESH_DEBOUNCE_MS = 30_000;
+
+type NewNotificationPayload = {
+  notification: AppNotification;
+  unreadCount: number;
+};
 
 type NotificationContextValue = {
   unreadCount: number;
@@ -22,6 +29,7 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const { isPreviewMode } = usePreview();
+  const { socket, subscribeReconnect } = useSocket();
   const [unreadCount, setUnreadCount] = useState(0);
   const [previewReadIds, setPreviewReadIds] = useState<Set<string>>(new Set());
   const lastBadgeFetchRef = useRef(0);
@@ -59,6 +67,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     lastBadgeFetchRef.current = Date.now();
   }, []);
 
+  const handleLiveNotification = useCallback((payload: NewNotificationPayload) => {
+    syncUnreadCount(payload.unreadCount);
+    notifyNewNotification(payload);
+  }, [syncUnreadCount]);
+
   useEffect(() => {
     if (isLoading) {
       return;
@@ -71,6 +84,32 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     void refreshUnreadCount();
   }, [isLoading, isAuthenticated, isPreviewMode, previewUnreadCount, refreshUnreadCount]);
+
+  useEffect(() => {
+    return subscribeReconnect(() => {
+      void refreshUnreadCount();
+    });
+  }, [refreshUnreadCount, subscribeReconnect]);
+
+  useEffect(() => {
+    if (!socket || !isAuthenticated || isPreviewMode) {
+      return;
+    }
+
+    const handleNewNotification = (payload: NewNotificationPayload) => {
+      if (!payload?.notification) {
+        return;
+      }
+
+      handleLiveNotification(payload);
+    };
+
+    socket.on('new_notification', handleNewNotification);
+
+    return () => {
+      socket.off('new_notification', handleNewNotification);
+    };
+  }, [handleLiveNotification, isAuthenticated, isPreviewMode, socket]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {

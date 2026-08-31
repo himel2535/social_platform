@@ -43,6 +43,9 @@ function registerMessageHandlers(io, socket) {
       const receiverRoom = getUserRoom(receiverId);
       const senderRoom = getUserRoom(userId);
 
+      const receiverSockets = await io.in(receiverRoom).fetchSockets();
+      const receiverOnline = receiverSockets.length > 0;
+
       io.to(receiverRoom).emit('new_message', {
         message: result.message,
         conversation: {
@@ -63,8 +66,7 @@ function registerMessageHandlers(io, socket) {
         },
       });
 
-      const receiverSockets = await io.in(receiverRoom).fetchSockets();
-      if (receiverSockets.length === 0) {
+      if (!receiverOnline) {
         await notificationService.createAndNotify({
           recipientId: receiverId,
           actorId: userId,

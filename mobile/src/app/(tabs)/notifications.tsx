@@ -22,6 +22,7 @@ import { Pagination } from '@/services/post.service';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 import { navigateFromNotificationData } from '@/hooks/usePushNotifications';
+import { subscribeNewNotification } from '@/utils/notificationEvents';
 
 const PAGE_LIMIT = 20;
 const TAB_REFRESH_DEBOUNCE_MS = 10_000;
@@ -113,6 +114,22 @@ export default function NotificationsScreen() {
   useEffect(() => {
     void loadNotifications(1);
   }, [loadNotifications]);
+
+  useEffect(() => {
+    if (isPreviewMode) {
+      return;
+    }
+
+    return subscribeNewNotification(({ notification, unreadCount }) => {
+      syncUnreadCount(unreadCount);
+      setNotifications((current) => {
+        if (current.some((item) => item._id === notification._id)) {
+          return current;
+        }
+        return [notification, ...current];
+      });
+    });
+  }, [isPreviewMode, syncUnreadCount]);
 
   useEffect(() => {
     if (isPreviewMode || activeTab !== 'notifications') {

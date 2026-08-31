@@ -1,7 +1,9 @@
 const authenticateSocket = require('./auth');
 const { registerMessageHandlers, getUserRoom } = require('./message.handlers');
+const notificationService = require('../services/notification.service');
 
 module.exports = function initSocket(io) {
+  notificationService.setSocketIo(io);
   io.use(authenticateSocket);
 
   io.on('connection', (socket) => {

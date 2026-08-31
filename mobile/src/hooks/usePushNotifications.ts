@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
 import { type Href, useRootNavigationState, useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
@@ -44,16 +45,30 @@ export function usePushNotifications() {
   const { isAuthenticated, isLoading } = useAuth();
   const { isPreviewMode } = usePreview();
   const { showToast } = useToast();
-  const { incrementUnread } = useNotifications();
+  const { refreshUnreadCount } = useNotifications();
   const router = useRouter();
   const navigationState = useRootNavigationState();
   const pendingRef = useRef<Record<string, string> | null>(null);
-  const registeredRef = useRef(false);
+  const lastRegisteredTokenRef = useRef<string | null>(null);
   const routerRef = useRef(router);
   const routerReadyRef = useRef(false);
 
   routerRef.current = router;
   routerReadyRef.current = !!navigationState?.key;
+
+  const registerDeviceToken = async () => {
+    const token = await notificationService.getFCMToken();
+    if (!token) {
+      return;
+    }
+
+    if (lastRegisteredTokenRef.current === token) {
+      return;
+    }
+
+    await notificationService.registerDeviceToken(token);
+    lastRegisteredTokenRef.current = token;
+  };
 
   useEffect(() => {
     if (!routerReadyRef.current || isLoading || !isAuthenticated || isPreviewMode) {
@@ -69,7 +84,7 @@ export function usePushNotifications() {
 
   useEffect(() => {
     if (isLoading || isPreviewMode || !isAuthenticated) {
-      registeredRef.current = false;
+      lastRegisteredTokenRef.current = null;
       return;
     }
 
@@ -82,20 +97,14 @@ export function usePushNotifications() {
         pendingRef.current = last;
       }
 
-      if (!registeredRef.current) {
-        const token = await notificationService.getFCMToken();
-        if (token && !cancelled) {
-          await notificationService.registerDeviceToken(token);
-          registeredRef.current = true;
-        }
-      }
+      await registerDeviceToken();
 
       cleanup = notificationService.setupNotificationHandlers({
         onReceived: (notification) => {
           const body = notification.request.content.body;
           const title = notification.request.content.title;
           showToast(body || title || 'New notification', 'info');
-          incrementUnread();
+          void refreshUnreadCount();
         },
         onTap: (data) => {
           if (routerReadyRef.current && isAuthenticated) {
@@ -109,9 +118,17 @@ export function usePushNotifications() {
 
     void register();
 
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && isAuthenticated && !isPreviewMode) {
+        void registerDeviceToken();
+        void refreshUnreadCount();
+      }
+    });
+
     return () => {
       cancelled = true;
       cleanup?.();
+      appStateSubscription.remove();
     };
-  }, [isAuthenticated, isLoading, isPreviewMode, incrementUnread, showToast]);
+  }, [isAuthenticated, isLoading, isPreviewMode, refreshUnreadCount, showToast]);
 }
