@@ -37,8 +37,8 @@ function registerMessageHandlers(io, socket) {
         return;
       }
 
-      const { receiverId, text } = payload;
-      const result = await messageService.sendMessage(userId, receiverId, text);
+      const { receiverId, text, type, postId } = payload;
+      const result = await messageService.sendMessage(userId, receiverId, { text, type, postId });
 
       const receiverRoom = getUserRoom(receiverId);
       const senderRoom = getUserRoom(userId);

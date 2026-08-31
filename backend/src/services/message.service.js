@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 const User = require('../models/User');
+const Post = require('../models/Post');
 const AppError = require('../utils/AppError');
 const {
   buildConversationId,
@@ -18,7 +19,9 @@ const formatMessage = (message) => ({
   conversationId: message.conversationId,
   senderId: message.senderId,
   receiverId: message.receiverId,
+  type: message.type || 'text',
   text: message.text,
+  postId: message.postId ? message.postId.toString() : null,
   readAt: message.readAt ?? null,
   createdAt: message.createdAt,
 });
@@ -81,7 +84,7 @@ const ensureReceiverExists = async (receiverId) => {
   return receiver;
 };
 
-const sendMessage = async (senderId, receiverId, text) => {
+const sendMessage = async (senderId, receiverId, payload = {}) => {
   validateReceiverId(receiverId);
 
   if (senderId.toString() === receiverId.toString()) {
@@ -90,7 +93,31 @@ const sendMessage = async (senderId, receiverId, text) => {
 
   await ensureReceiverExists(receiverId);
 
-  const trimmedText = validateMessageText(text);
+  const type = payload.type === 'shared_post' ? 'shared_post' : 'text';
+  let trimmedText = '';
+  let postId = null;
+
+  if (type === 'shared_post') {
+    postId = payload.postId;
+
+    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+      throw new AppError('Valid postId is required for shared post messages', 400);
+    }
+
+    const post = await Post.findById(postId).select('_id');
+
+    if (!post) {
+      throw new AppError('Post not found', 404);
+    }
+
+    trimmedText =
+      typeof payload.text === 'string' && payload.text.trim()
+        ? payload.text.trim()
+        : 'Shared a post';
+  } else {
+    trimmedText = validateMessageText(payload.text);
+  }
+
   const conversationId = buildConversationId(senderId, receiverId);
   const sortedParticipants = [senderId, receiverId].sort((a, b) =>
     a.toString().localeCompare(b.toString()),
@@ -101,13 +128,17 @@ const sendMessage = async (senderId, receiverId, text) => {
     conversationId,
     senderId,
     receiverId,
+    type,
     text: trimmedText,
+    postId: postId || null,
   });
 
   const lastMessage = {
     text: trimmedText,
     senderId,
     createdAt: message.createdAt,
+    type,
+    postId: postId ? postId.toString() : null,
   };
 
   let conversation = await Conversation.findOne({ conversationId });

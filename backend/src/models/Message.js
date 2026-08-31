@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+const MESSAGE_TYPES = ['text', 'shared_post'];
+
 const messageSchema = new mongoose.Schema(
   {
     conversationId: {
@@ -17,12 +19,21 @@ const messageSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Receiver is required'],
     },
+    type: {
+      type: String,
+      enum: MESSAGE_TYPES,
+      default: 'text',
+    },
     text: {
       type: String,
-      required: [true, 'Message text is required'],
       trim: true,
-      minlength: [1, 'Message text cannot be empty'],
       maxlength: [2000, 'Message cannot exceed 2000 characters'],
+      default: '',
+    },
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post',
+      default: null,
     },
     readAt: {
       type: Date,
@@ -33,6 +44,32 @@ const messageSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+messageSchema.pre('validate', function validateMessage(next) {
+  if (this.type === 'shared_post') {
+    if (!this.postId) {
+      return next(new Error('Shared post messages require a postId'));
+    }
+
+    if (!this.text || !this.text.trim()) {
+      this.text = 'Shared a post';
+    }
+
+    return next();
+  }
+
+  const trimmed = (this.text || '').trim();
+  if (!trimmed) {
+    return next(new Error('Message text cannot be empty'));
+  }
+
+  if (trimmed.length > 2000) {
+    return next(new Error('Message cannot exceed 2000 characters'));
+  }
+
+  this.text = trimmed;
+  return next();
+});
 
 messageSchema.index({ conversationId: 1, createdAt: -1 });
 messageSchema.index({ conversationId: 1, _id: -1 });

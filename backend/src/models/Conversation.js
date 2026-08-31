@@ -16,6 +16,16 @@ const lastMessageSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    type: {
+      type: String,
+      enum: ['text', 'shared_post'],
+      default: 'text',
+    },
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post',
+      default: null,
+    },
   },
   { _id: false },
 );
