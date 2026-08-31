@@ -17,13 +17,26 @@ const api = axios.create({
 });
 
 let unauthorizedHandler: (() => void) | null = null;
+let cachedToken: string | null | undefined;
+
+export function setAuthTokenCache(token: string | null) {
+  cachedToken = token;
+}
+
+export function clearAuthTokenCache() {
+  cachedToken = null;
+}
 
 export function setUnauthorizedHandler(handler: (() => void) | null) {
   unauthorizedHandler = handler;
 }
 
 api.interceptors.request.use(async (requestConfig: InternalAxiosRequestConfig) => {
-  const token = await getToken();
+  let token = cachedToken;
+  if (token === undefined) {
+    token = await getToken();
+    cachedToken = token;
+  }
   if (token && requestConfig.headers) {
     requestConfig.headers.Authorization = `Bearer ${token}`;
   }

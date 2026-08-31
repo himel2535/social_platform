@@ -1,4 +1,4 @@
-import { Redirect, Tabs } from 'expo-router';
+import { Redirect, Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { StyleSheet, Platform, View } from 'react-native';
@@ -13,10 +13,12 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useNotifications } from '@/context/NotificationContext';
 
 export default function TabsLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const { isPreviewMode } = usePreview();
   const { isDesktop } = useResponsive();
   const { unreadCount } = useNotifications();
+  const profileUsername = isPreviewMode ? 'nexus' : user?.username;
 
   if (isLoading) {
     return (
@@ -84,6 +86,14 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="profile"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            if (profileUsername) {
+              router.push(`/profile/${profileUsername}`);
+            }
+          },
+        }}
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => (

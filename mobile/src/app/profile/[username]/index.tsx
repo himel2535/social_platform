@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { View, StyleSheet, Pressable, FlatList, ListRenderItem } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Screen,
@@ -27,6 +27,13 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { useSafeBack } from '@/hooks/useSafeBack';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
+import {
+  getCachedProfile,
+  getCachedUserPosts,
+  setCachedProfile,
+  setCachedUserPosts,
+  subscribeProfileUpdates,
+} from '@/utils/profileCache';
 
 function formatMemberSince(date?: string): string {
   if (!date) {
@@ -56,6 +63,9 @@ export default function ProfileScreen() {
   const [postsLoading, setPostsLoading] = useState(true);
   const [error, setError] = useState('');
   const [postsError, setPostsError] = useState('');
+  const postsRef = useRef(posts);
+
+  postsRef.current = posts;
 
   const loadProfile = useCallback(async () => {
     if (!username) {
@@ -64,22 +74,33 @@ export default function ProfileScreen() {
       return;
     }
 
+    if (isPreviewMode) {
+      setLoading(true);
+      setError('');
+      const previewUser = getPreviewUser(username, 'nexus');
+      if (!previewUser) {
+        setError('User not found');
+        setProfile(null);
+      } else {
+        setProfile(previewUser);
+      }
+      setLoading(false);
+      return;
+    }
+
+    const cached = getCachedProfile(username);
+    if (cached) {
+      setProfile(cached);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      if (isPreviewMode) {
-        const previewUser = getPreviewUser(username, 'nexus');
-        if (!previewUser) {
-          setError('User not found');
-          setProfile(null);
-          return;
-        }
-        setProfile(previewUser);
-        return;
-      }
-
       const data = await userService.getUserProfile(username);
+      setCachedProfile(username, data);
       setProfile(data);
     } catch (err) {
       setProfile(null);
@@ -95,16 +116,25 @@ export default function ProfileScreen() {
       return;
     }
 
+    if (isPreviewMode) {
+      setPosts(getPreviewPostsByUsername(username));
+      setPostsLoading(false);
+      return;
+    }
+
+    const cached = getCachedUserPosts(username);
+    if (cached) {
+      setPosts(cached.posts);
+      setPostsLoading(false);
+      return;
+    }
+
     setPostsLoading(true);
     setPostsError('');
 
     try {
-      if (isPreviewMode) {
-        setPosts(getPreviewPostsByUsername(username));
-        return;
-      }
-
       const data = await userService.getUserPosts(username, 1, 20);
+      setCachedUserPosts(username, data);
       setPosts(data.posts);
     } catch (err) {
       setPosts([]);
@@ -119,13 +149,28 @@ export default function ProfileScreen() {
     loadPosts();
   }, [loadProfile, loadPosts]);
 
+  useEffect(() => {
+    if (!username || isPreviewMode) {
+      return;
+    }
+
+    return subscribeProfileUpdates(username, ({ profile, reloadPosts }) => {
+      if (profile) {
+        setProfile(profile);
+      }
+      if (reloadPosts) {
+        void loadPosts();
+      }
+    });
+  }, [username, isPreviewMode, loadPosts]);
+
   const isOwnProfile =
     profile &&
     (isPreviewMode
       ? profile.username === 'nexus'
       : currentUser?.username === profile.username);
 
-  const handleFollowPress = async () => {
+  const handleFollowPress = useCallback(async () => {
     if (!profile || isOwnProfile) {
       return;
     }
@@ -139,17 +184,134 @@ export default function ProfileScreen() {
     }
 
     await followUser(profile, setProfile);
-  };
+  }, [profile, isOwnProfile, isPreviewMode, followUser]);
 
-  const handleLike = (postId: string) => {
-    const post = posts.find((item) => item._id === postId);
-    if (post) {
-      toggleLike(post, setPosts);
+  const handleLike = useCallback(
+    (postId: string) => {
+      const post = postsRef.current.find((item) => item._id === postId);
+      if (post) {
+        toggleLike(post, setPosts);
+      }
+    },
+    [toggleLike],
+  );
+
+  const renderPostItem: ListRenderItem<Post> = useCallback(
+    ({ item }) => <PostCard post={item} onLike={() => handleLike(item._id)} />,
+    [handleLike],
+  );
+
+  const profileHeader = useMemo(() => {
+    if (!profile) {
+      return null;
     }
-  };
+
+    return (
+      <>
+        <GlassCard style={styles.card}>
+          <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+            <Avatar name={profile.name} uri={profile.avatar} size={isDesktop ? 96 : 80} />
+            <View style={[styles.headerInfo, isDesktop && styles.headerInfoDesktop]}>
+              <Typography variant="screenTitle" style={styles.name}>
+                {profile.name}
+              </Typography>
+              <Typography variant="username">@{profile.username}</Typography>
+
+              <View style={styles.statsRow}>
+                <Pressable
+                  style={styles.statItem}
+                  onPress={() => router.push(`/profile/${profile.username}/followers`)}
+                  accessibilityRole="button"
+                  accessibilityLabel="View followers"
+                >
+                  <Typography variant="userName">
+                    {formatCount(profile.followersCount ?? 0)}
+                  </Typography>
+                  <Typography variant="metadata">Followers</Typography>
+                </Pressable>
+                <Pressable
+                  style={styles.statItem}
+                  onPress={() => router.push(`/profile/${profile.username}/following`)}
+                  accessibilityRole="button"
+                  accessibilityLabel="View following"
+                >
+                  <Typography variant="userName">
+                    {formatCount(profile.followingCount ?? 0)}
+                  </Typography>
+                  <Typography variant="metadata">Following</Typography>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+
+          {profile.bio ? (
+            <Typography variant="postContent" style={styles.bio}>
+              {profile.bio}
+            </Typography>
+          ) : (
+            <Typography variant="metadata" style={styles.bio}>
+              No bio yet.
+            </Typography>
+          )}
+
+          <Typography variant="metadata" style={styles.memberSince}>
+            Member since {formatMemberSince(profile.createdAt)}
+          </Typography>
+
+          {isOwnProfile ? (
+            <PrimaryButton
+              title="Edit Profile"
+              onPress={() => router.push('/profile/edit')}
+              style={styles.actionButton}
+            />
+          ) : (
+            <View style={styles.actionButton}>
+              {profile.following ? (
+                <SecondaryButton title="Following" onPress={handleFollowPress} />
+              ) : (
+                <PrimaryButton title="Follow" onPress={handleFollowPress} />
+              )}
+            </View>
+          )}
+        </GlassCard>
+
+        <Typography variant="sectionTitle" style={styles.postsTitle}>
+          Posts
+        </Typography>
+      </>
+    );
+  }, [profile, isDesktop, isOwnProfile, router, handleFollowPress]);
+
+  const postsListEmpty = useMemo(() => {
+    if (postsLoading) {
+      return <LoadingSpinner style={styles.centered} />;
+    }
+
+    if (postsError) {
+      return <ErrorState message={postsError} onRetry={loadPosts} />;
+    }
+
+    if (posts.length === 0) {
+      return (
+        <EmptyState
+          title="No posts yet"
+          message={
+            isOwnProfile
+              ? 'Share your first post with the community.'
+              : 'This user has not posted anything yet.'
+          }
+          icon="newspaper-outline"
+          actionLabel={isOwnProfile ? 'Create Post' : undefined}
+          onAction={isOwnProfile ? () => router.push('/(tabs)/create') : undefined}
+        />
+      );
+    }
+
+    return null;
+  }, [postsLoading, postsError, posts.length, isOwnProfile, loadPosts, router]);
 
   return (
-    <Screen scroll contentContainerStyle={styles.content}>
+    <Screen contentContainerStyle={styles.content}>
       <AppHeader
         title="Profile"
         leftAction={
@@ -168,106 +330,21 @@ export default function ProfileScreen() {
       ) : error ? (
         <ErrorState message={error} onRetry={loadProfile} />
       ) : profile ? (
-        <>
-          <GlassCard style={styles.card}>
-            <View style={[styles.header, isDesktop && styles.headerDesktop]}>
-              <Avatar name={profile.name} uri={profile.avatar} size={isDesktop ? 96 : 80} />
-              <View style={[styles.headerInfo, isDesktop && styles.headerInfoDesktop]}>
-                <Typography variant="screenTitle" style={styles.name}>
-                  {profile.name}
-                </Typography>
-                <Typography variant="username">@{profile.username}</Typography>
-
-                <View style={styles.statsRow}>
-                  <Pressable
-                    style={styles.statItem}
-                    onPress={() => router.push(`/profile/${profile.username}/followers`)}
-                    accessibilityRole="button"
-                    accessibilityLabel="View followers"
-                  >
-                    <Typography variant="userName">
-                      {formatCount(profile.followersCount ?? 0)}
-                    </Typography>
-                    <Typography variant="metadata">Followers</Typography>
-                  </Pressable>
-                  <Pressable
-                    style={styles.statItem}
-                    onPress={() => router.push(`/profile/${profile.username}/following`)}
-                    accessibilityRole="button"
-                    accessibilityLabel="View following"
-                  >
-                    <Typography variant="userName">
-                      {formatCount(profile.followingCount ?? 0)}
-                    </Typography>
-                    <Typography variant="metadata">Following</Typography>
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-
-            {profile.bio ? (
-              <Typography variant="postContent" style={styles.bio}>
-                {profile.bio}
-              </Typography>
-            ) : (
-              <Typography variant="metadata" style={styles.bio}>
-                No bio yet.
-              </Typography>
-            )}
-
-            <Typography variant="metadata" style={styles.memberSince}>
-              Member since {formatMemberSince(profile.createdAt)}
-            </Typography>
-
-            {isOwnProfile ? (
-              <PrimaryButton
-                title="Edit Profile"
-                onPress={() => router.push('/profile/edit')}
-                style={styles.actionButton}
-              />
-            ) : (
-              <View style={styles.actionButton}>
-                {profile.following ? (
-                  <SecondaryButton title="Following" onPress={handleFollowPress} />
-                ) : (
-                  <PrimaryButton title="Follow" onPress={handleFollowPress} />
-                )}
-              </View>
-            )}
-          </GlassCard>
-
-          <View style={styles.postsSection}>
-            <Typography variant="sectionTitle" style={styles.postsTitle}>
-              Posts
-            </Typography>
-
-            {postsLoading ? (
-              <LoadingSpinner style={styles.centered} />
-            ) : postsError ? (
-              <ErrorState message={postsError} onRetry={loadPosts} />
-            ) : posts.length === 0 ? (
-              <EmptyState
-                title="No posts yet"
-                message={
-                  isOwnProfile
-                    ? 'Share your first post with the community.'
-                    : 'This user has not posted anything yet.'
-                }
-                icon="newspaper-outline"
-                actionLabel={isOwnProfile ? 'Create Post' : undefined}
-                onAction={isOwnProfile ? () => router.push('/(tabs)/create') : undefined}
-              />
-            ) : (
-              posts.map((post) => (
-                <PostCard
-                  key={post._id}
-                  post={post}
-                  onLike={() => handleLike(post._id)}
-                />
-              ))
-            )}
-          </View>
-        </>
+        <FlatList
+          style={styles.list}
+          data={posts}
+          keyExtractor={(item) => item._id}
+          renderItem={renderPostItem}
+          ListHeaderComponent={
+            <>
+              {profileHeader}
+            </>
+          }
+          ListEmptyComponent={postsListEmpty}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+        />
       ) : null}
     </Screen>
   );
@@ -327,10 +404,15 @@ const styles = StyleSheet.create({
   actionButton: {
     marginTop: spacing.sm,
   },
-  postsSection: {
-    marginTop: spacing.xl,
+  listContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.xl,
+  },
+  list: {
+    flex: 1,
   },
   postsTitle: {
+    marginTop: spacing.xl,
     marginBottom: spacing.lg,
   },
 });

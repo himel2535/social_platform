@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
@@ -16,7 +17,6 @@ async function setItem(key: string, value: string): Promise<void> {
     return;
   }
 
-  const SecureStore = await import('expo-secure-store');
   await SecureStore.setItemAsync(key, value);
 }
 
@@ -29,7 +29,6 @@ async function getItem(key: string): Promise<string | null> {
     }
   }
 
-  const SecureStore = await import('expo-secure-store');
   return SecureStore.getItemAsync(key);
 }
 
@@ -43,7 +42,6 @@ async function removeItem(key: string): Promise<void> {
     return;
   }
 
-  const SecureStore = await import('expo-secure-store');
   await SecureStore.deleteItemAsync(key);
 }
 

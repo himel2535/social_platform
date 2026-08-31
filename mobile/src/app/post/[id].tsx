@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { View, StyleSheet, Pressable } from 'react-native';
 import {
   Screen,
@@ -77,13 +77,11 @@ export default function PostDetailScreen() {
     }
   }, [id, isPreviewMode]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (!isPreviewMode && id && cachedPost) {
-        loadComments();
-      }
-    }, [isPreviewMode, id, cachedPost, loadComments]),
-  );
+  useEffect(() => {
+    if (!isPreviewMode && id) {
+      void loadComments();
+    }
+  }, [isPreviewMode, id, loadComments]);
 
   const [likeOverrides, setLikeOverrides] = useState<
     Record<string, { likedByMe: boolean; likesCount: number }>

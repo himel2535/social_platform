@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Image, StyleSheet, ViewStyle } from 'react-native';
+import React, { memo, useMemo } from 'react';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { Typography } from './Typography';
 import { colors } from '@/theme/colors';
-import { radius } from '@/theme/radius';
 
 type Props = {
   uri?: string | null;
@@ -11,13 +11,22 @@ type Props = {
   style?: ViewStyle;
 };
 
-export function Avatar({ uri, name = '?', size = 40, style }: Props) {
-  const initials = name
-    .split(' ')
-    .map((part) => part.charAt(0))
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+export const Avatar = memo(function Avatar({ uri, name = '?', size = 40, style }: Props) {
+  const initials = useMemo(
+    () =>
+      name
+        .split(' ')
+        .map((part) => part.charAt(0))
+        .join('')
+        .slice(0, 2)
+        .toUpperCase(),
+    [name],
+  );
+
+  const imageStyle = useMemo(
+    () => ({ width: size, height: size, borderRadius: size / 2 }),
+    [size],
+  );
 
   return (
     <View
@@ -29,7 +38,12 @@ export function Avatar({ uri, name = '?', size = 40, style }: Props) {
       accessibilityLabel={`Avatar for ${name}`}
     >
       {uri ? (
-        <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} />
+        <Image
+          source={{ uri }}
+          style={imageStyle}
+          cachePolicy="memory-disk"
+          contentFit="cover"
+        />
       ) : (
         <Typography variant="userName" style={{ fontSize: size * 0.35 }}>
           {initials}
@@ -37,7 +51,7 @@ export function Avatar({ uri, name = '?', size = 40, style }: Props) {
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -1,12 +1,16 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview, PREVIEW_NOTIFICATIONS } from '@/preview';
 import { notificationService } from '@/services/notification.service';
 
+const BADGE_REFRESH_DEBOUNCE_MS = 30_000;
+
 type NotificationContextValue = {
   unreadCount: number;
   refreshUnreadCount: () => Promise<void>;
+  syncUnreadCount: (count: number) => void;
+  decrementUnread: () => void;
   incrementUnread: () => void;
   markPreviewRead: (id: string) => void;
   markAllPreviewRead: () => void;
@@ -20,6 +24,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { isPreviewMode } = usePreview();
   const [unreadCount, setUnreadCount] = useState(0);
   const [previewReadIds, setPreviewReadIds] = useState<Set<string>>(new Set());
+  const lastBadgeFetchRef = useRef(0);
 
   const previewUnreadCount = useMemo(
     () =>
@@ -43,10 +48,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     try {
       const result = await notificationService.getNotifications(1, 1);
       setUnreadCount(result.unreadCount);
+      lastBadgeFetchRef.current = Date.now();
     } catch {
       // Badge refresh is best-effort
     }
   }, [isAuthenticated, isPreviewMode, previewReadIds]);
+
+  const syncUnreadCount = useCallback((count: number) => {
+    setUnreadCount(count);
+    lastBadgeFetchRef.current = Date.now();
+  }, []);
 
   useEffect(() => {
     if (isLoading) {
@@ -63,9 +74,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active' && isAuthenticated && !isPreviewMode) {
-        void refreshUnreadCount();
+      if (state !== 'active' || !isAuthenticated || isPreviewMode) {
+        return;
       }
+
+      if (Date.now() - lastBadgeFetchRef.current < BADGE_REFRESH_DEBOUNCE_MS) {
+        return;
+      }
+
+      void refreshUnreadCount();
     });
 
     return () => subscription.remove();
@@ -73,6 +90,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const incrementUnread = useCallback(() => {
     setUnreadCount((current) => current + 1);
+  }, []);
+
+  const decrementUnread = useCallback(() => {
+    setUnreadCount((current) => Math.max(0, current - 1));
   }, []);
 
   const markPreviewRead = useCallback((id: string) => {
@@ -92,19 +113,33 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     [previewReadIds],
   );
 
+  const value = useMemo(
+    () => ({
+      unreadCount: isPreviewMode ? previewUnreadCount : unreadCount,
+      refreshUnreadCount,
+      syncUnreadCount,
+      decrementUnread,
+      incrementUnread,
+      markPreviewRead,
+      markAllPreviewRead,
+      isPreviewRead,
+    }),
+    [
+      isPreviewMode,
+      previewUnreadCount,
+      unreadCount,
+      refreshUnreadCount,
+      syncUnreadCount,
+      decrementUnread,
+      incrementUnread,
+      markPreviewRead,
+      markAllPreviewRead,
+      isPreviewRead,
+    ],
+  );
+
   return (
-    <NotificationContext.Provider
-      value={{
-        unreadCount: isPreviewMode ? previewUnreadCount : unreadCount,
-        refreshUnreadCount,
-        incrementUnread,
-        markPreviewRead,
-        markAllPreviewRead,
-        isPreviewRead,
-      }}
-    >
-      {children}
-    </NotificationContext.Provider>
+    <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>
   );
 }
 

@@ -1,6 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { User, authService, SignupData, LoginData } from '@/services/auth.service';
-import { ApiError, setUnauthorizedHandler } from '@/services/api';
+import { ApiError, setUnauthorizedHandler, setAuthTokenCache, clearAuthTokenCache } from '@/services/api';
 import { getToken, saveToken, clearAuthStorage, getUser, saveUser, getFcmToken, removeFcmToken } from '@/utils/storage';
 import { notificationService } from '@/services/notification.service';
 
@@ -39,6 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setUser(null);
       setToken(null);
+      clearAuthTokenCache();
       await clearAuthStorage();
     } finally {
       loggingOutRef.current = false;
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setToken(storedToken);
+      setAuthTokenCache(storedToken);
 
       if (storedUser) {
         try {
@@ -63,6 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Ignore invalid cached user JSON
         }
       }
+
+      setIsLoading(false);
 
       try {
         const freshUser = await authService.getMe();
@@ -74,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (apiError.status === 401) {
           setUser(null);
           setToken(null);
+          clearAuthTokenCache();
           await clearAuthStorage();
         }
       }
@@ -102,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await authService.login(data);
     setUser(response.user);
     setToken(response.token);
+    setAuthTokenCache(response.token);
     await saveToken(response.token);
     await saveUser(JSON.stringify(response.user));
   }, []);
@@ -110,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const response = await authService.signup(data);
     setUser(response.user);
     setToken(response.token);
+    setAuthTokenCache(response.token);
     await saveToken(response.token);
     await saveUser(JSON.stringify(response.user));
   }, []);
@@ -119,23 +126,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await saveUser(JSON.stringify(nextUser));
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isLoading,
-        isAuthenticated: !!token && !!user,
-        login,
-        signup,
-        logout,
-        restoreSession,
-        updateUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isLoading,
+      isAuthenticated: !!token && !!user,
+      login,
+      signup,
+      logout,
+      restoreSession,
+      updateUser,
+    }),
+    [user, token, isLoading, login, signup, logout, restoreSession, updateUser],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuthContext() {

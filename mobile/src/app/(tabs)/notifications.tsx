@@ -1,6 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, StyleSheet, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FlatList, ListRenderItem, StyleSheet } from 'react-native';
+import { useRouter, useSegments } from 'expo-router';
 import {
   Screen,
   AppHeader,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
 import { spacing } from '@/theme/spacing';
+import { layout } from '@/theme/glass';
 import { usePreview, PREVIEW_NOTIFICATIONS, PreviewNotification } from '@/preview';
 import { useNotifications } from '@/context/NotificationContext';
 import {
@@ -23,6 +24,7 @@ import { normalizeApiError } from '@/utils/normalizeApiError';
 import { navigateFromNotificationData } from '@/hooks/usePushNotifications';
 
 const PAGE_LIMIT = 20;
+const TAB_REFRESH_DEBOUNCE_MS = 10_000;
 
 function notificationCopy(notification: AppNotification): { title: string; body: string } {
   const name = notification.actor?.name || 'Someone';
@@ -43,12 +45,15 @@ function notificationCopy(notification: AppNotification): { title: string; body:
 export default function NotificationsScreen() {
   const { isPreviewMode } = usePreview();
   const {
-    refreshUnreadCount,
+    syncUnreadCount,
+    decrementUnread,
     markPreviewRead,
     isPreviewRead,
   } = useNotifications();
   const { showToast } = useToast();
   const router = useRouter();
+  const segments = useSegments();
+  const activeTab = segments[1];
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
@@ -56,6 +61,11 @@ export default function NotificationsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const loadingMoreRef = useRef(false);
+  const paginationRef = useRef<Pagination | null>(null);
+  const lastFetchRef = useRef(0);
+  const previousTabRef = useRef<string | undefined>(undefined);
+
+  paginationRef.current = pagination;
 
   const loadNotifications = useCallback(
     async (page = 1, append = false) => {
@@ -81,7 +91,8 @@ export default function NotificationsScreen() {
           append ? [...current, ...result.notifications] : result.notifications,
         );
         setPagination(result.pagination);
-        await refreshUnreadCount();
+        syncUnreadCount(result.unreadCount);
+        lastFetchRef.current = Date.now();
       } catch (err) {
         if (!append) {
           setNotifications([]);
@@ -93,91 +104,150 @@ export default function NotificationsScreen() {
         loadingMoreRef.current = false;
       }
     },
-    [isPreviewMode, refreshUnreadCount],
+    [isPreviewMode, syncUnreadCount],
   );
 
-  useFocusEffect(
-    useCallback(() => {
+  useEffect(() => {
+    void loadNotifications(1);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    if (isPreviewMode || activeTab !== 'notifications') {
+      previousTabRef.current = activeTab;
+      return;
+    }
+
+    const previousTab = previousTabRef.current;
+    previousTabRef.current = activeTab;
+
+    if (
+      previousTab !== undefined &&
+      previousTab !== 'notifications' &&
+      Date.now() - lastFetchRef.current > TAB_REFRESH_DEBOUNCE_MS
+    ) {
       void loadNotifications(1);
-    }, [loadNotifications]),
+    }
+  }, [activeTab, isPreviewMode, loadNotifications]);
+
+  const handleLoadMore = useCallback(() => {
+    const currentPagination = paginationRef.current;
+    if (!currentPagination?.hasNextPage || loadingMoreRef.current) {
+      return;
+    }
+    void loadNotifications(currentPagination.page + 1, true);
+  }, [loadNotifications]);
+
+  const handlePreviewPress = useCallback(
+    (notification: PreviewNotification) => {
+      markPreviewRead(notification.id);
+
+      if (notification.type === 'like' || notification.type === 'comment') {
+        if (notification.postId) {
+          router.push(`/post/${notification.postId}`);
+        }
+        return;
+      }
+
+      if (notification.type === 'follow' && notification.username) {
+        router.push(`/profile/${notification.username}`);
+      }
+    },
+    [markPreviewRead, router],
   );
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (isPreviewMode || !pagination?.hasNextPage || loadingMoreRef.current) {
-      return;
-    }
-
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
-
-    if (distanceFromBottom < 120) {
-      void loadNotifications(pagination.page + 1, true);
-    }
-  };
-
-  const handlePreviewPress = (notification: PreviewNotification) => {
-    markPreviewRead(notification.id);
-
-    if (notification.type === 'like' || notification.type === 'comment') {
-      if (notification.postId) {
-        router.push(`/post/${notification.postId}`);
+  const handleAuthenticatedPress = useCallback(
+    async (notification: AppNotification) => {
+      if (!notification.read) {
+        try {
+          await notificationService.markAsRead(notification._id);
+          setNotifications((current) =>
+            current.map((item) =>
+              item._id === notification._id ? { ...item, read: true } : item,
+            ),
+          );
+          decrementUnread();
+        } catch {
+          // Navigation still proceeds if mark-read fails
+        }
       }
-      return;
-    }
 
-    if (notification.type === 'follow' && notification.username) {
-      router.push(`/profile/${notification.username}`);
-    }
-  };
+      const type = notification.type;
+      const postId = notification.post?._id;
+      const actorUsername = notification.actor?.username;
 
-  const handleAuthenticatedPress = async (notification: AppNotification) => {
-    if (!notification.read) {
-      try {
-        await notificationService.markAsRead(notification._id);
-        setNotifications((current) =>
-          current.map((item) =>
-            item._id === notification._id ? { ...item, read: true } : item,
-          ),
-        );
-        await refreshUnreadCount();
-      } catch {
-        // Navigation still proceeds if mark-read fails
+      if ((type === 'like' || type === 'comment') && !postId) {
+        showToast('This post is no longer available', 'error');
+        return;
       }
+
+      if (type === 'follow' && !actorUsername) {
+        showToast('This user is no longer available', 'error');
+        return;
+      }
+
+      navigateFromNotificationData(
+        {
+          type,
+          postId: postId || '',
+          actorUsername: actorUsername || '',
+        },
+        router,
+      );
+    },
+    [decrementUnread, router, showToast],
+  );
+
+  const renderItem: ListRenderItem<AppNotification> = useCallback(
+    ({ item }) => {
+      const copy = notificationCopy(item);
+      return (
+        <NotificationItem
+          title={copy.title}
+          body={copy.body}
+          timestamp={item.createdAt}
+          read={item.read}
+          avatarUri={item.actor?.avatar}
+          onPress={() => handleAuthenticatedPress(item)}
+        />
+      );
+    },
+    [handleAuthenticatedPress],
+  );
+
+  const listHeader = useMemo(() => <AppHeader title="Notifications" />, []);
+
+  const listEmpty = useMemo(() => {
+    if (loading) {
+      return <LoadingSpinner style={styles.centered} />;
     }
 
-    const type = notification.type;
-    const postId = notification.post?._id;
-    const actorUsername = notification.actor?.username;
-
-    if ((type === 'like' || type === 'comment') && !postId) {
-      showToast('This post is no longer available', 'error');
-      return;
+    if (error) {
+      return <ErrorState message={error} onRetry={() => loadNotifications(1)} />;
     }
 
-    if (type === 'follow' && !actorUsername) {
-      showToast('This user is no longer available', 'error');
-      return;
+    if (notifications.length === 0) {
+      return (
+        <EmptyState
+          title="No notifications yet"
+          message="You'll be notified when someone likes or comments on your posts."
+          icon="notifications-outline"
+        />
+      );
     }
 
-    navigateFromNotificationData(
-      {
-        type,
-        postId: postId || '',
-        actorUsername: actorUsername || '',
-      },
-      router,
-    );
-  };
+    return null;
+  }, [loading, error, notifications.length, loadNotifications]);
 
-  return (
-    <Screen
-      scroll
-      contentContainerStyle={styles.content}
-      scrollViewProps={{ onScroll: handleScroll, scrollEventThrottle: 400 }}
-    >
-      <AppHeader title="Notifications" />
-      {isPreviewMode ? (
-        PREVIEW_NOTIFICATIONS.map((notification) => (
+  const listFooter = useMemo(
+    () => (loadingMore ? <LoadingSpinner style={styles.loadMore} /> : null),
+    [loadingMore],
+  );
+
+  if (isPreviewMode) {
+    return (
+      <Screen scroll contentContainerStyle={styles.content}>
+        {listHeader}
+        {PREVIEW_NOTIFICATIONS.map((notification) => (
           <NotificationItem
             key={notification.id}
             title={notification.title}
@@ -187,36 +257,27 @@ export default function NotificationsScreen() {
             avatarUri={notification.avatar}
             onPress={() => handlePreviewPress(notification)}
           />
-        ))
-      ) : loading ? (
-        <LoadingSpinner style={styles.centered} />
-      ) : error ? (
-        <ErrorState message={error} onRetry={() => loadNotifications(1)} />
-      ) : notifications.length === 0 ? (
-        <EmptyState
-          title="No notifications yet"
-          message="You'll be notified when someone likes or comments on your posts."
-          icon="notifications-outline"
-        />
-      ) : (
-        <View style={styles.list}>
-          {notifications.map((notification) => {
-            const copy = notificationCopy(notification);
-            return (
-              <NotificationItem
-                key={notification._id}
-                title={copy.title}
-                body={copy.body}
-                timestamp={notification.createdAt}
-                read={notification.read}
-                avatarUri={notification.actor?.avatar}
-                onPress={() => handleAuthenticatedPress(notification)}
-              />
-            );
-          })}
-          {loadingMore ? <LoadingSpinner style={styles.loadMore} /> : null}
-        </View>
-      )}
+        ))}
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen contentPaddingBottom={layout.tabBarHeight + spacing.lg}>
+      <FlatList
+        data={notifications}
+        keyExtractor={(item) => item._id}
+        renderItem={renderItem}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={listEmpty}
+        ListFooterComponent={listFooter}
+        contentContainerStyle={styles.listContent}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews
+        style={styles.list}
+      />
     </Screen>
   );
 }
@@ -226,7 +287,10 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   list: {
-    marginTop: spacing.sm,
+    flex: 1,
+  },
+  listContent: {
+    flexGrow: 1,
   },
   centered: {
     marginTop: spacing.lg,

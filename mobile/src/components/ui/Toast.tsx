@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import { Typography } from './Typography';
 import { colors } from '@/theme/colors';
@@ -35,8 +35,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         ? colors.error
         : colors.primary;
 
+  const contextValue = useMemo(() => ({ showToast }), [showToast]);
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       {toast.visible && (
         <Animated.View

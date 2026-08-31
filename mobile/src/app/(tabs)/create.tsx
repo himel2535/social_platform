@@ -11,9 +11,12 @@ import {
 } from '@/components/ui';
 import { spacing } from '@/theme/spacing';
 import { usePreview } from '@/preview';
+import { useAuth } from '@/hooks/useAuth';
 import { postService } from '@/services/post.service';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
+import { notifyFeedPostCreated } from '@/utils/feedEvents';
+import { invalidateUserPostsCache } from '@/utils/profileCache';
 
 const MAX_LENGTH = 1000;
 
@@ -23,6 +26,7 @@ export default function CreatePostScreen() {
   const [error, setError] = useState('');
   const router = useRouter();
   const { isPreviewMode } = usePreview();
+  const { user } = useAuth();
 
   const handleSubmit = async () => {
     const trimmed = content.trim();
@@ -38,7 +42,11 @@ export default function CreatePostScreen() {
     setError('');
 
     try {
-      await postService.createPost({ content: trimmed });
+      const post = await postService.createPost({ content: trimmed });
+      notifyFeedPostCreated(post);
+      if (user?.username) {
+        invalidateUserPostsCache(user.username);
+      }
       setContent('');
       router.replace('/(tabs)');
     } catch (err) {

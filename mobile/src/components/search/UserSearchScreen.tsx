@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { View, StyleSheet, Pressable, FlatList, ListRenderItem } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   AppHeader,
@@ -83,71 +83,106 @@ export function UserSearchScreen({ showBackButton = false }: Props) {
     };
   }, [query, runSearch]);
 
-  const handleSelectUser = (username: string) => {
-    router.push(`/profile/${username}`);
-  };
+  const handleSelectUser = useCallback(
+    (username: string) => {
+      router.push(`/profile/${username}`);
+    },
+    [router],
+  );
+
+  const renderItem: ListRenderItem<UserProfile> = useCallback(
+    ({ item }) => (
+      <Pressable
+        style={styles.resultRow}
+        onPress={() => handleSelectUser(item.username)}
+        accessibilityRole="button"
+        accessibilityLabel={`View profile for ${item.name}`}
+      >
+        <Avatar name={item.name} uri={item.avatar} size={44} />
+        <View style={styles.resultInfo}>
+          <Typography variant="userName">{item.name}</Typography>
+          <Typography variant="username">@{item.username}</Typography>
+          {item.bio ? (
+            <Typography variant="metadata" numberOfLines={1}>
+              {item.bio}
+            </Typography>
+          ) : null}
+        </View>
+      </Pressable>
+    ),
+    [handleSelectUser],
+  );
+
+  const listHeader = useMemo(
+    () => (
+      <>
+        <AppHeader
+          title="Search Users"
+          leftAction={
+            showBackButton ? (
+              <IconButton
+                icon="arrow-back"
+                accessibilityLabel="Go back"
+                onPress={goBack}
+              />
+            ) : undefined
+          }
+        />
+        <SearchBar
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search by name or username..."
+        />
+      </>
+    ),
+    [showBackButton, goBack, query],
+  );
+
+  const listEmpty = useMemo(() => {
+    if (loading) {
+      return <LoadingSpinner style={styles.centered} />;
+    }
+
+    if (error) {
+      return <ErrorState message={error} onRetry={() => runSearch(query)} />;
+    }
+
+    if (query.trim().length === 0) {
+      return (
+        <EmptyState
+          title="Search for users"
+          message="Enter a name or username to find people."
+          icon="search-outline"
+        />
+      );
+    }
+
+    if (results.length === 0) {
+      return (
+        <EmptyState
+          title="No users found"
+          message={`No results for "${query.trim()}".`}
+          icon="person-outline"
+        />
+      );
+    }
+
+    return null;
+  }, [loading, error, query, results.length, runSearch]);
 
   return (
     <View style={styles.container}>
-      <AppHeader
-        title="Search Users"
-        leftAction={
-          showBackButton ? (
-            <IconButton
-              icon="arrow-back"
-              accessibilityLabel="Go back"
-              onPress={goBack}
-            />
-          ) : undefined
-        }
+      <FlatList
+        data={results}
+        keyExtractor={(item) => item._id}
+        renderItem={renderItem}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={listEmpty}
+        contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews
       />
-
-      <SearchBar
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search by name or username..."
-      />
-
-      <View style={styles.results}>
-        {loading ? (
-          <LoadingSpinner style={styles.centered} />
-        ) : error ? (
-          <ErrorState message={error} onRetry={() => runSearch(query)} />
-        ) : query.trim().length === 0 ? (
-          <EmptyState
-            title="Search for users"
-            message="Enter a name or username to find people."
-            icon="search-outline"
-          />
-        ) : results.length === 0 ? (
-          <EmptyState
-            title="No users found"
-            message={`No results for "${query.trim()}".`}
-            icon="person-outline"
-          />
-        ) : (
-          results.map((user) => (
-            <Pressable
-              key={user._id}
-              style={styles.resultRow}
-              onPress={() => handleSelectUser(user.username)}
-              accessibilityRole="button"
-              accessibilityLabel={`View profile for ${user.name}`}
-            >
-              <Avatar name={user.name} uri={user.avatar} size={44} />
-              <View style={styles.resultInfo}>
-                <Typography variant="userName">{user.name}</Typography>
-                <Typography variant="username">@{user.username}</Typography>
-                {user.bio ? (
-                  <Typography variant="metadata" numberOfLines={1}>
-                    {user.bio}
-                  </Typography>
-                ) : null}
-              </View>
-            </Pressable>
-          ))
-        )}
-      </View>
     </View>
   );
 }
@@ -156,8 +191,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  results: {
-    marginTop: spacing.lg,
+  listContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.xl,
   },
   centered: {
     marginTop: spacing.lg,

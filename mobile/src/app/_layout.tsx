@@ -1,13 +1,13 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/context/AuthContext';
 import { PreviewProvider } from '@/preview';
 import { ToastProvider } from '@/components/ui';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { SplashScreenController } from '@/components/navigation/SplashScreenController';
 import { colors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync();
@@ -18,13 +18,10 @@ function PushNotificationBridge() {
 }
 
 export default function RootLayout() {
-  useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
-
   return (
     <SafeAreaProvider>
       <AuthProvider>
+        <SplashScreenController />
         <PreviewProvider>
           <ToastProvider>
             <NotificationProvider>

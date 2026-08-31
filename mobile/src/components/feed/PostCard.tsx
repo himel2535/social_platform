@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { GlassCard, Avatar, Typography, IconButton } from '@/components/ui';
 import { LikeButton } from './LikeButton';
@@ -14,7 +14,7 @@ type Props = {
   onComment?: () => void;
 };
 
-export function PostCard({ post, onLike, onComment }: Props) {
+export const PostCard = memo(function PostCard({ post, onLike, onComment }: Props) {
   const router = useRouter();
 
   const handlePostPress = () => {
@@ -67,7 +67,7 @@ export function PostCard({ post, onLike, onComment }: Props) {
       </View>
     </GlassCard>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

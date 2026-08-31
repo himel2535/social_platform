@@ -36,9 +36,10 @@ export function DesktopSidebar() {
   const router = useRouter();
   const segments = useSegments();
   const activeSegment = segments[1] || 'index';
-  const { logout, isAuthenticated } = useAuth();
+  const { logout, isAuthenticated, user } = useAuth();
   const { isPreviewMode, exitPreview } = usePreview();
   const { unreadCount } = useNotifications();
+  const profileUsername = isPreviewMode ? 'nexus' : user?.username;
 
   const handleLogout = async () => {
     if (isPreviewMode) {
@@ -63,7 +64,13 @@ export function DesktopSidebar() {
             <Pressable
               key={item.label}
               style={[styles.navItem, active && styles.navItemActive]}
-              onPress={() => router.push(item.href as never)}
+              onPress={() => {
+                if (item.segment === 'profile' && profileUsername) {
+                  router.push(`/profile/${profileUsername}`);
+                  return;
+                }
+                router.push(item.href as never);
+              }}
               accessibilityRole="button"
               accessibilityLabel={item.label}
             >

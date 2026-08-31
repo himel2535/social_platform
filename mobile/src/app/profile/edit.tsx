@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui';
 import { userService } from '@/services/user.service';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
+import { updateProfileCache } from '@/utils/profileCache';
 import { useSafeBack } from '@/hooks/useSafeBack';
 
 const BIO_MAX_LENGTH = 160;
@@ -33,42 +34,16 @@ export default function EditProfileScreen() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    let active = true;
-
-    async function loadProfile() {
-      try {
-        const profile = await userService.getMe();
-        if (!active) {
-          return;
-        }
-        setName(profile.name);
-        setBio(profile.bio ?? '');
-        setAvatar(profile.avatar ?? '');
-      } catch (err) {
-        if (active) {
-          showToast(normalizeApiError(err as ApiError, 'general'), 'error');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
+    if (!user) {
+      setLoading(false);
+      return;
     }
 
-    if (user) {
-      setName(user.name);
-      setBio(user.bio ?? '');
-      setAvatar(user.avatar ?? '');
-      setLoading(false);
-      loadProfile();
-    } else {
-      setLoading(false);
-    }
-
-    return () => {
-      active = false;
-    };
-  }, [showToast, user]);
+    setName(user.name);
+    setBio(user.bio ?? '');
+    setAvatar(user.avatar ?? '');
+    setLoading(false);
+  }, [user]);
 
   const validate = () => {
     const errors: Record<string, string> = {};
@@ -125,6 +100,8 @@ export default function EditProfileScreen() {
         bio: updated.bio,
         createdAt: updated.createdAt,
       });
+
+      updateProfileCache(updated.username, updated);
 
       showToast('Profile updated successfully', 'success');
       goBack();

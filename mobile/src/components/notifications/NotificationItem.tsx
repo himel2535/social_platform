@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Avatar, Typography } from '@/components/ui';
 import { spacing } from '@/theme/spacing';
@@ -14,7 +14,7 @@ type Props = {
   avatarUri?: string | null;
 };
 
-export function NotificationItem({
+export const NotificationItem = memo(function NotificationItem({
   title,
   body,
   timestamp,
@@ -40,7 +40,7 @@ export function NotificationItem({
       {!read && <View style={styles.dot} />}
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

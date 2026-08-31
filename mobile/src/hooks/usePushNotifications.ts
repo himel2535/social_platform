@@ -35,20 +35,23 @@ export function usePushNotifications() {
   const navigationState = useRootNavigationState();
   const pendingRef = useRef<Record<string, string> | null>(null);
   const registeredRef = useRef(false);
+  const routerRef = useRef(router);
+  const routerReadyRef = useRef(false);
 
-  const routerReady = !!navigationState?.key;
+  routerRef.current = router;
+  routerReadyRef.current = !!navigationState?.key;
 
   useEffect(() => {
-    if (!routerReady || isLoading || !isAuthenticated || isPreviewMode) {
+    if (!routerReadyRef.current || isLoading || !isAuthenticated || isPreviewMode) {
       return;
     }
 
     if (pendingRef.current) {
       const data = pendingRef.current;
       pendingRef.current = null;
-      navigateFromNotificationData(data, router);
+      navigateFromNotificationData(data, routerRef.current);
     }
-  }, [routerReady, isLoading, isAuthenticated, isPreviewMode, router]);
+  }, [navigationState?.key, isLoading, isAuthenticated, isPreviewMode]);
 
   useEffect(() => {
     if (isLoading || isPreviewMode || !isAuthenticated) {
@@ -81,8 +84,8 @@ export function usePushNotifications() {
           incrementUnread();
         },
         onTap: (data) => {
-          if (routerReady && isAuthenticated) {
-            navigateFromNotificationData(data, router);
+          if (routerReadyRef.current && isAuthenticated) {
+            navigateFromNotificationData(data, routerRef.current);
           } else {
             pendingRef.current = data;
           }
@@ -96,13 +99,5 @@ export function usePushNotifications() {
       cancelled = true;
       cleanup?.();
     };
-  }, [
-    isAuthenticated,
-    isLoading,
-    isPreviewMode,
-    incrementUnread,
-    showToast,
-    router,
-    routerReady,
-  ]);
+  }, [isAuthenticated, isLoading, isPreviewMode, incrementUnread, showToast]);
 }

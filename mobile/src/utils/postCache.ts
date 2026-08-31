@@ -1,3 +1,4 @@
+import { Dispatch, SetStateAction } from 'react';
 import { Post } from '@/services/post.service';
 
 const cache = new Map<string, Post>();
@@ -30,6 +31,37 @@ export function updateCachedPostCommentsCount(postId: string, commentsCount: num
   if (cached) {
     cache.set(postId, { ...cached, commentsCount });
   }
+}
+
+export function syncPostsFromCache(setPosts: Dispatch<SetStateAction<Post[]>>): void {
+  setPosts((current) => {
+    let changed = false;
+
+    const next = current.map((post) => {
+      const cached = cache.get(post._id);
+      if (!cached) {
+        return post;
+      }
+
+      if (
+        cached.commentsCount === post.commentsCount &&
+        cached.likedByMe === post.likedByMe &&
+        cached.likesCount === post.likesCount
+      ) {
+        return post;
+      }
+
+      changed = true;
+      return {
+        ...post,
+        commentsCount: cached.commentsCount,
+        likedByMe: cached.likedByMe,
+        likesCount: cached.likesCount,
+      };
+    });
+
+    return changed ? next : current;
+  });
 }
 
 export function clearPostCache(): void {
