@@ -5,7 +5,7 @@ import {
   Screen,
   AppHeader,
   IconButton,
-  LoadingSpinner,
+  CenteredLoading,
   EmptyState,
   ErrorState,
 } from '@/components/ui';
@@ -121,7 +121,7 @@ export default function FollowingScreen() {
 
       <View style={styles.list}>
         {loading ? (
-          <LoadingSpinner style={styles.centered} />
+          <CenteredLoading />
         ) : error ? (
           <ErrorState message={error} onRetry={() => loadFollowing(1)} />
         ) : users.length === 0 ? (
@@ -135,7 +135,7 @@ export default function FollowingScreen() {
             {users.map((user) => (
               <UserListItem key={user._id} user={user} />
             ))}
-            {loadingMore ? <LoadingSpinner style={styles.loadMore} /> : null}
+            {loadingMore ? <CenteredLoading style={styles.loadMore} /> : null}
           </>
         )}
       </View>
@@ -148,12 +148,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   list: {
-    marginTop: spacing.lg,
-  },
-  centered: {
+    flex: 1,
     marginTop: spacing.lg,
   },
   loadMore: {
+    minHeight: 120,
     marginVertical: spacing.lg,
   },
 });

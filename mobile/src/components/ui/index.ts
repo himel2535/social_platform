@@ -9,6 +9,7 @@ export { Avatar } from './Avatar';
 export { Badge } from './Badge';
 export { Divider } from './Divider';
 export { LoadingSpinner } from './LoadingSpinner';
+export { CenteredLoading } from './CenteredLoading';
 export { LoadingSkeleton } from './LoadingSkeleton';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';

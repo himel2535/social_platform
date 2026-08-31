@@ -6,7 +6,7 @@ import {
   IconButton,
   Avatar,
   Typography,
-  LoadingSpinner,
+  CenteredLoading,
   EmptyState,
   ErrorState,
 } from '@/components/ui';
@@ -140,7 +140,7 @@ export function UserSearchScreen({ showBackButton = false }: Props) {
 
   const listEmpty = useMemo(() => {
     if (loading) {
-      return <LoadingSpinner style={styles.centered} />;
+      return <CenteredLoading />;
     }
 
     if (error) {
@@ -194,9 +194,6 @@ const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
     paddingBottom: spacing.xl,
-  },
-  centered: {
-    marginTop: spacing.lg,
   },
   resultRow: {
     flexDirection: 'row',

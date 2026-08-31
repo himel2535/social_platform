@@ -72,14 +72,26 @@ export default function PostDetailScreen() {
         console.log(
           `[Comments] API ${id}: ${Date.now() - start}ms, count=${result.comments.length}`,
         );
+        const receivedAt = Date.now();
+        console.log('[Comments] data received', receivedAt);
+        setComments(result.comments);
+        setCommentsLoading(false);
+        console.log('[Comments] state updated', Date.now() - receivedAt, 'ms after received');
+      } else {
+        setComments(result.comments);
+        setCommentsLoading(false);
       }
-      setComments(result.comments);
     } catch (err) {
       setCommentsError(normalizeApiError(err as ApiError, 'general'));
-    } finally {
       setCommentsLoading(false);
     }
   }, [id, isPreviewMode]);
+
+  useEffect(() => {
+    if (__DEV__ && !isPreviewMode) {
+      console.log('[Comments] rendered', comments.length, 'items, loading=', commentsLoading);
+    }
+  }, [comments, commentsLoading, isPreviewMode]);
 
   useEffect(() => {
     if (!isPreviewMode && id) {
@@ -274,7 +286,7 @@ export default function PostDetailScreen() {
         Comments
       </Typography>
       <Divider />
-      {commentsLoading ? (
+      {commentsLoading && comments.length === 0 ? (
         <CommentSkeletonList count={4} />
       ) : commentsError ? (
         <View style={styles.commentsMessage}>

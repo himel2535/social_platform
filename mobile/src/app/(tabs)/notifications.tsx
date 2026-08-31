@@ -6,7 +6,7 @@ import {
   AppHeader,
   EmptyState,
   ErrorState,
-  LoadingSpinner,
+  CenteredLoading,
   useToast,
 } from '@/components/ui';
 import { NotificationItem } from '@/components/notifications/NotificationItem';
@@ -218,7 +218,7 @@ export default function NotificationsScreen() {
 
   const listEmpty = useMemo(() => {
     if (loading) {
-      return <LoadingSpinner style={styles.centered} />;
+      return <CenteredLoading />;
     }
 
     if (error) {
@@ -239,7 +239,7 @@ export default function NotificationsScreen() {
   }, [loading, error, notifications.length, loadNotifications]);
 
   const listFooter = useMemo(
-    () => (loadingMore ? <LoadingSpinner style={styles.loadMore} /> : null),
+    () => (loadingMore ? <CenteredLoading style={styles.loadMore} /> : null),
     [loadingMore],
   );
 
@@ -292,10 +292,8 @@ const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
   },
-  centered: {
-    marginTop: spacing.lg,
-  },
   loadMore: {
+    minHeight: 120,
     marginVertical: spacing.lg,
   },
 });

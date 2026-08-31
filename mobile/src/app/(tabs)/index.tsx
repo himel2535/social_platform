@@ -12,7 +12,6 @@ import {
   AppHeader,
   EmptyState,
   ErrorState,
-  LoadingSpinner,
 } from '@/components/ui';
 import { SearchBar } from '@/components/feed/SearchBar';
 import { PostCard } from '@/components/feed/PostCard';
@@ -310,7 +309,7 @@ export default function FeedScreen() {
   ]);
 
   const listFooter = useMemo(
-    () => (loadingMore ? <LoadingSpinner style={styles.loadMore} /> : null),
+    () => (loadingMore ? <FeedSkeletonList count={2} /> : null),
     [loadingMore],
   );
 
@@ -391,6 +390,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadMore: {
-    marginVertical: spacing.lg,
+    marginTop: spacing.sm,
   },
 });

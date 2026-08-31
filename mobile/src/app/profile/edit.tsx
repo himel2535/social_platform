@@ -7,7 +7,7 @@ import {
   IconButton,
   TextInput,
   PrimaryButton,
-  LoadingSpinner,
+  CenteredLoading,
 } from '@/components/ui';
 import { spacing } from '@/theme/spacing';
 import { useAuth } from '@/hooks/useAuth';
@@ -126,7 +126,7 @@ export default function EditProfileScreen() {
       />
 
       {loading ? (
-        <LoadingSpinner style={styles.centered} />
+        <CenteredLoading />
       ) : (
         <View style={styles.form}>
           <TextInput
@@ -187,9 +187,6 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
-  },
-  centered: {
-    marginTop: spacing.xl,
   },
   form: {
     marginTop: spacing.lg,

@@ -10,7 +10,7 @@ import {
   GlassCard,
   PrimaryButton,
   SecondaryButton,
-  LoadingSpinner,
+  CenteredLoading,
   ErrorState,
   EmptyState,
 } from '@/components/ui';
@@ -284,7 +284,7 @@ export default function ProfileScreen() {
 
   const postsListEmpty = useMemo(() => {
     if (postsLoading) {
-      return <LoadingSpinner style={styles.centered} />;
+      return <CenteredLoading />;
     }
 
     if (postsError) {
@@ -326,7 +326,7 @@ export default function ProfileScreen() {
       />
 
       {loading ? (
-        <LoadingSpinner style={styles.centered} />
+        <CenteredLoading />
       ) : error ? (
         <ErrorState message={error} onRetry={loadProfile} />
       ) : profile ? (
@@ -353,9 +353,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   content: {
     paddingBottom: spacing.xl,
-  },
-  centered: {
-    marginTop: spacing.xl,
   },
   card: {
     marginTop: spacing.lg,
