@@ -41,7 +41,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
+          "icon": "./assets/images/techzugram-icon.png",
           "color": "#7C3AED"
         }
       ]
