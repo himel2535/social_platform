@@ -9,7 +9,6 @@ import { DesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useNotifications } from '@/context/NotificationContext';
 import { useMessaging } from '@/hooks/useMessaging';
 
 export default function TabsLayout() {
@@ -17,7 +16,6 @@ export default function TabsLayout() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { isPreviewMode } = usePreview();
   const { isDesktop } = useResponsive();
-  const { unreadCount } = useNotifications();
   const { totalUnreadCount: messagesUnreadCount } = useMessaging();
   const profileUsername = isPreviewMode ? 'nexus' : user?.username;
 
@@ -33,7 +31,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.success,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: isDesktop ? styles.hiddenTabBar : styles.tabBar,
         tabBarBackground: () =>
@@ -66,19 +64,14 @@ export default function TabsLayout() {
         options={{
           title: 'Create',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-circle-outline" size={size} color={colors.secondary} />
+            <Ionicons name="add-circle-outline" size={size} color={colors.success} />
           ),
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Alerts',
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.error },
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen

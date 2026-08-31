@@ -8,10 +8,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography } from './Typography';
-import { colors } from '@/theme/colors';
 import { radius } from '@/theme/radius';
 import { spacing } from '@/theme/spacing';
-import { glass, layout } from '@/theme/glass';
+import { buttonGlass, layout } from '@/theme/glass';
 
 type Props = {
   title: string;
@@ -43,11 +42,11 @@ export function SecondaryButton({
       accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {loading ? (
-        <ActivityIndicator color={colors.secondary} />
+        <ActivityIndicator color={buttonGlass.accent} />
       ) : (
         <View style={styles.content}>
-          {icon && <Ionicons name={icon} size={18} color={colors.secondary} />}
-          <Typography variant="button" color="secondary">
+          {icon && <Ionicons name={icon} size={18} color={buttonGlass.accent} />}
+          <Typography variant="button" color="success">
             {title}
           </Typography>
         </View>
@@ -58,10 +57,10 @@ export function SecondaryButton({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: glass.backgroundColor,
+    backgroundColor: buttonGlass.secondaryBackground,
     borderRadius: radius.md,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.borderColor,
+    borderWidth: 1,
+    borderColor: buttonGlass.secondaryBorder,
     minHeight: layout.minTouchTarget,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,

@@ -148,9 +148,10 @@ const styles = StyleSheet.create({
   },
   button: {
     marginBottom: spacing.lg,
+    alignSelf: 'stretch',
   },
   linkButton: {
-    alignSelf: 'center',
+    alignSelf: 'stretch',
   },
   previewButton: {
     alignSelf: 'center',

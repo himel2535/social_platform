@@ -23,6 +23,15 @@ export const feedGlass = {
   accentColor: 'rgba(93, 202, 165, 0.5)',
 } as const;
 
+export const buttonGlass = {
+  primaryGradient: ['rgba(34, 197, 94, 0.55)', 'rgba(16, 185, 129, 0.35)'] as const,
+  primaryBorder: 'rgba(74, 222, 128, 0.45)',
+  secondaryBackground: 'rgba(34, 197, 94, 0.12)',
+  secondaryBorder: 'rgba(74, 222, 128, 0.35)',
+  textOnPrimary: colors.textPrimary,
+  accent: colors.success,
+} as const;
+
 export const shadows = {
   sm: {
     shadowColor: colors.background,
