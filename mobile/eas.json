@@ -14,11 +14,17 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://social-platform-f13o.onrender.com/api"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://social-platform-f13o.onrender.com/api"
+      },
       "android": {
         "buildType": "apk"
       }
