@@ -6,7 +6,6 @@ import {
   AppHeader,
   IconButton,
   EmptyState,
-  LoadingSkeleton,
   Typography,
   GlassCard,
   Avatar,
@@ -15,11 +14,13 @@ import {
 } from '@/components/ui';
 import { CommentInput } from '@/components/comments/CommentInput';
 import { CommentItem } from '@/components/comments/CommentItem';
+import { CommentSkeletonList } from '@/components/comments/CommentSkeleton';
 import { LikeButton } from '@/components/feed/LikeButton';
 import { CommentButton } from '@/components/feed/CommentButton';
 import { spacing } from '@/theme/spacing';
 import { usePreview, getPreviewPost, getPreviewComments } from '@/preview';
 import { getCachedPost, updateCachedPostCommentsCount } from '@/utils/postCache';
+import { notifyPostCommentsCountUpdated } from '@/utils/feedEvents';
 import { Post } from '@/services/post.service';
 import { Comment, commentService } from '@/services/comment.service';
 import { formatTimeAgo } from '@/utils/format';
@@ -28,8 +29,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 import { useSafeBack } from '@/hooks/useSafeBack';
-
-const MAX_COMMENT_LENGTH = 500;
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,7 +39,6 @@ export default function PostDetailScreen() {
   const { toggleLike } = useToggleLike();
   const { user } = useAuth();
   const { showToast } = useToast();
-  const loading = false;
 
   const previewPost = isPreviewMode && id ? getPreviewPost(id) : undefined;
   const previewComments = isPreviewMode && id ? getPreviewComments(id) : [];
@@ -48,7 +46,7 @@ export default function PostDetailScreen() {
 
   const [authenticatedPost, setAuthenticatedPost] = useState<Post | undefined>(cachedPost);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(!isPreviewMode && !!id);
   const [commentsError, setCommentsError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -68,7 +66,13 @@ export default function PostDetailScreen() {
     setCommentsError('');
 
     try {
+      const start = __DEV__ ? Date.now() : 0;
       const result = await commentService.getComments(id);
+      if (__DEV__) {
+        console.log(
+          `[Comments] API ${id}: ${Date.now() - start}ms, count=${result.comments.length}`,
+        );
+      }
       setComments(result.comments);
     } catch (err) {
       setCommentsError(normalizeApiError(err as ApiError, 'general'));
@@ -129,6 +133,7 @@ export default function PostDetailScreen() {
         return;
       }
       updateCachedPostCommentsCount(id, commentsCount);
+      notifyPostCommentsCountUpdated(id, commentsCount);
       setAuthenticatedPost((current) =>
         current ? { ...current, commentsCount } : current,
       );
@@ -138,23 +143,52 @@ export default function PostDetailScreen() {
 
   const handleSubmitComment = useCallback(async () => {
     const trimmed = commentText.trim();
-    if (!trimmed || !id || isPreviewMode) {
+    if (!trimmed || !id || isPreviewMode || !user || submitting) {
       return;
     }
 
+    const optimisticId = `optimistic-${Date.now()}`;
+    const previousCount = authenticatedPost?.commentsCount ?? 0;
+    const optimisticComment: Comment = {
+      _id: optimisticId,
+      content: trimmed,
+      author: {
+        _id: user._id,
+        name: user.name,
+        username: user.username,
+        avatar: user.avatar ?? null,
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    setCommentText('');
+    setComments((current) => [optimisticComment, ...current]);
+    updateCommentsCount(previousCount + 1);
     setSubmitting(true);
 
     try {
       const result = await commentService.createComment(id, trimmed);
-      setCommentText('');
-      setComments((current) => [result.comment, ...current]);
+      setComments((current) =>
+        current.map((item) => (item._id === optimisticId ? result.comment : item)),
+      );
       updateCommentsCount(result.commentsCount);
     } catch (err) {
+      setComments((current) => current.filter((item) => item._id !== optimisticId));
+      updateCommentsCount(previousCount);
       showToast(normalizeApiError(err as ApiError, 'general'), 'error');
     } finally {
       setSubmitting(false);
     }
-  }, [commentText, id, isPreviewMode, showToast, updateCommentsCount]);
+  }, [
+    commentText,
+    id,
+    isPreviewMode,
+    user,
+    submitting,
+    authenticatedPost?.commentsCount,
+    showToast,
+    updateCommentsCount,
+  ]);
 
   const handleDeleteComment = useCallback(
     async (commentId: string) => {
@@ -241,7 +275,7 @@ export default function PostDetailScreen() {
       </Typography>
       <Divider />
       {commentsLoading ? (
-        <LoadingSkeleton lines={3} />
+        <CommentSkeletonList count={4} />
       ) : commentsError ? (
         <View style={styles.commentsMessage}>
           <Typography variant="metadata">{commentsError}</Typography>
@@ -282,9 +316,7 @@ export default function PostDetailScreen() {
         }
       />
 
-      {loading ? (
-        <LoadingSkeleton lines={4} />
-      ) : displayPost ? (
+      {displayPost ? (
         <>
           {renderPostCard(displayPost)}
           {isPreviewMode ? renderPreviewComments() : renderAuthenticatedComments()}

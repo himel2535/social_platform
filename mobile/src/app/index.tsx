@@ -1,5 +1,4 @@
 import { Redirect } from 'expo-router';
-import { LoadingSpinner, Screen } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
 
@@ -8,11 +7,7 @@ export default function Index() {
   const { isPreviewMode } = usePreview();
 
   if (isLoading) {
-    return (
-      <Screen>
-        <LoadingSpinner />
-      </Screen>
-    );
+    return null;
   }
 
   if (isAuthenticated) {

@@ -71,7 +71,7 @@ export const PostCard = memo(function PostCard({ post, onLike, onComment }: Prop
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   header: {
     flexDirection: 'row',

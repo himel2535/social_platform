@@ -11,12 +11,12 @@ import {
   Screen,
   AppHeader,
   EmptyState,
-  LoadingSkeleton,
   ErrorState,
   LoadingSpinner,
 } from '@/components/ui';
 import { SearchBar } from '@/components/feed/SearchBar';
 import { PostCard } from '@/components/feed/PostCard';
+import { FeedSkeletonList } from '@/components/feed/PostCardSkeleton';
 import { FeedHeaderActions } from '@/components/feed/FeedHeaderActions';
 import { spacing } from '@/theme/spacing';
 import { Post, Pagination, postService } from '@/services/post.service';
@@ -26,8 +26,8 @@ import { APP_NAME } from '@/constants/branding';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
-import { cachePost, cachePosts, syncPostsFromCache } from '@/utils/postCache';
-import { subscribeFeedPostCreated } from '@/utils/feedEvents';
+import { cachePost, cachePosts, syncPostsFromCache, updateCachedPostCommentsCount } from '@/utils/postCache';
+import { subscribeFeedPostCreated, subscribePostCommentsCountUpdated } from '@/utils/feedEvents';
 import { useToggleLike } from '@/hooks/useToggleLike';
 import { layout } from '@/theme/glass';
 
@@ -69,7 +69,7 @@ export default function FeedScreen() {
   const [previewPosts, setPreviewPosts] = useState<Post[]>(PREVIEW_POSTS);
   const [posts, setPosts] = useState<Post[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!isPreviewMode);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
@@ -163,6 +163,17 @@ export default function FeedScreen() {
   }, []);
 
   useEffect(() => {
+    return subscribePostCommentsCountUpdated((postId, commentsCount) => {
+      updateCachedPostCommentsCount(postId, commentsCount);
+      setPosts((current) =>
+        current.map((post) =>
+          post._id === postId ? { ...post, commentsCount } : post,
+        ),
+      );
+    });
+  }, []);
+
+  useEffect(() => {
     if (isPreviewMode || activeTab !== 'index') {
       previousTabRef.current = activeTab;
       return;
@@ -232,7 +243,7 @@ export default function FeedScreen() {
 
   const listHeader = useMemo(
     () => (
-      <View>
+      <View style={styles.listHeader}>
         <AppHeader
           title={APP_NAME}
           rightAction={
@@ -326,8 +337,7 @@ export default function FeedScreen() {
       <Screen contentPaddingBottom={layout.tabBarHeight + spacing.lg}>
         {listHeader}
         <View style={styles.initialLoading}>
-          <LoadingSkeleton />
-          <LoadingSkeleton />
+          <FeedSkeletonList count={5} />
         </View>
       </Screen>
     );
@@ -372,10 +382,13 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   feed: {
-    marginTop: spacing.lg,
+    marginTop: 0,
+  },
+  listHeader: {
+    marginBottom: spacing.sm,
   },
   initialLoading: {
-    marginTop: spacing.lg,
+    flex: 1,
   },
   loadMore: {
     marginVertical: spacing.lg,

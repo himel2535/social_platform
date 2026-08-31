@@ -5,7 +5,6 @@ import { StyleSheet, Platform, View } from 'react-native';
 import { colors } from '@/theme/colors';
 import { glass, layout } from '@/theme/glass';
 import { DevPreviewControls } from '@/preview';
-import { LoadingSpinner, Screen } from '@/components/ui';
 import { DesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
@@ -21,11 +20,7 @@ export default function TabsLayout() {
   const profileUsername = isPreviewMode ? 'nexus' : user?.username;
 
   if (isLoading) {
-    return (
-      <Screen>
-        <LoadingSpinner />
-      </Screen>
-    );
+    return null;
   }
 
   if (!isAuthenticated && !(__DEV__ && isPreviewMode)) {

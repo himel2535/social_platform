@@ -1,5 +1,4 @@
 import { Redirect, Stack } from 'expo-router';
-import { LoadingSpinner, Screen } from '@/components/ui';
 import { colors } from '@/theme/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
@@ -9,11 +8,7 @@ export default function AuthLayout() {
   const { isPreviewMode } = usePreview();
 
   if (isLoading) {
-    return (
-      <Screen>
-        <LoadingSpinner />
-      </Screen>
-    );
+    return null;
   }
 
   if (isAuthenticated && !isPreviewMode) {
