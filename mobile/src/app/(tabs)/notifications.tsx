@@ -38,6 +38,9 @@ function notificationCopy(notification: AppNotification): { title: string; body:
   if (notification.type === 'follow') {
     return { title: name, body: `${name} started following you` };
   }
+  if (notification.type === 'message') {
+    return { title: name, body: `${name} sent you a message` };
+  }
 
   return { title: name, body: 'sent you a notification' };
 }
@@ -185,11 +188,19 @@ export default function NotificationsScreen() {
         return;
       }
 
+      if (type === 'message' && !notification.actor?._id) {
+        showToast('This conversation is no longer available', 'error');
+        return;
+      }
+
       navigateFromNotificationData(
         {
           type,
           postId: postId || '',
           actorUsername: actorUsername || '',
+          senderId: notification.actor?._id || '',
+          actorName: notification.actor?.name || '',
+          actorAvatar: notification.actor?.avatar || '',
         },
         router,
       );

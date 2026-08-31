@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const NOTIFICATION_TYPES = ['like', 'comment', 'follow'];
+const NOTIFICATION_TYPES = ['like', 'comment', 'follow', 'message'];
 
 const notificationSchema = new mongoose.Schema(
   {
@@ -27,6 +27,10 @@ const notificationSchema = new mongoose.Schema(
     comment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Comment',
+      default: null,
+    },
+    conversationId: {
+      type: String,
       default: null,
     },
     read: {

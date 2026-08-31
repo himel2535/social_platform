@@ -11,7 +11,7 @@ import { colors } from '@/theme/colors';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 import { ApiError } from '@/services/api';
 import { notifyPostDeleted } from '@/utils/feedEvents';
-import { getPostShareUrl } from './PostCard';
+import { getPostShareUrl } from '@/utils/postShare';
 
 type Props = {
   post: Post;

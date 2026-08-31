@@ -272,12 +272,30 @@ export default function ProfileScreen() {
               style={styles.actionButton}
             />
           ) : (
-            <View style={styles.actionButton}>
-              {profile.following ? (
-                <SecondaryButton title="Following" onPress={handleFollowPress} />
-              ) : (
-                <PrimaryButton title="Follow" onPress={handleFollowPress} />
-              )}
+            <View style={styles.actionRow}>
+              <View style={styles.actionButtonFlex}>
+                {profile.following ? (
+                  <SecondaryButton title="Following" onPress={handleFollowPress} />
+                ) : (
+                  <PrimaryButton title="Follow" onPress={handleFollowPress} />
+                )}
+              </View>
+              <View style={styles.actionButtonFlex}>
+                <SecondaryButton
+                  title="Message"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/messages/[userId]',
+                      params: {
+                        userId: profile._id,
+                        name: profile.name,
+                        username: profile.username,
+                        avatar: profile.avatar || '',
+                      },
+                    })
+                  }
+                />
+              </View>
             </View>
           )}
         </GlassCard>
@@ -407,6 +425,14 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginTop: spacing.sm,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  actionButtonFlex: {
+    flex: 1,
   },
   listContent: {
     flexGrow: 1,

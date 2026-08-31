@@ -22,7 +22,7 @@ export type NotificationActor = {
   avatar?: string | null;
 };
 
-export type NotificationType = 'like' | 'comment' | 'follow';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'message';
 
 export type AppNotification = {
   _id: string;
@@ -32,6 +32,7 @@ export type AppNotification = {
   actor: NotificationActor | null;
   post: { _id: string } | null;
   comment: { _id: string } | null;
+  conversationId?: string | null;
 };
 
 export type NotificationsResponse = {

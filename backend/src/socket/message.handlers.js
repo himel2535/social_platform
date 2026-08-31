@@ -1,4 +1,5 @@
 const messageService = require('../services/message.service');
+const notificationService = require('../services/notification.service');
 const { buildConversationId } = require('../utils/conversationId');
 const { checkMessageRateLimit } = require('../utils/messageRateLimiter');
 const AppError = require('../utils/AppError');
@@ -61,6 +62,16 @@ function registerMessageHandlers(io, socket) {
           unreadCount: result.conversation.unreadCountForSender,
         },
       });
+
+      const receiverSockets = await io.in(receiverRoom).fetchSockets();
+      if (receiverSockets.length === 0) {
+        await notificationService.createAndNotify({
+          recipientId: receiverId,
+          actorId: userId,
+          type: 'message',
+          conversationId: result.conversation.conversationId,
+        });
+      }
 
       if (typeof ack === 'function') {
         ack(

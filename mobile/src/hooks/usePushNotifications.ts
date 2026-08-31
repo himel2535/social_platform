@@ -15,6 +15,7 @@ export function navigateFromNotificationData(
   const type = data.type;
   const postId = data.postId;
   const actorUsername = data.actorUsername || data.username;
+  const senderId = data.senderId || data.actorId;
 
   if ((type === 'like' || type === 'comment') && postId) {
     router.push(`/post/${postId}` as Href);
@@ -23,6 +24,19 @@ export function navigateFromNotificationData(
 
   if (type === 'follow' && actorUsername) {
     router.push(`/profile/${actorUsername}` as Href);
+    return;
+  }
+
+  if (type === 'message' && senderId) {
+    router.push({
+      pathname: '/messages/[userId]',
+      params: {
+        userId: senderId,
+        name: data.actorName || '',
+        username: actorUsername || '',
+        avatar: data.actorAvatar || '',
+      },
+    });
   }
 }
 

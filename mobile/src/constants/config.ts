@@ -8,7 +8,10 @@ function getDefaultApiUrl(): string {
   return 'http://localhost:5000/api';
 }
 
+const apiUrl = process.env.EXPO_PUBLIC_API_URL || getDefaultApiUrl();
+
 export const config = {
-  apiUrl: process.env.EXPO_PUBLIC_API_URL || getDefaultApiUrl(),
+  apiUrl,
+  socketUrl: apiUrl.replace(/\/api\/?$/, ''),
   requestTimeout: 15000,
 } as const;

@@ -18,6 +18,7 @@ const PUSH_COPY = {
   like: (name) => ({ title: 'New like', body: `${name} liked your post` }),
   comment: (name) => ({ title: 'New comment', body: `${name} commented on your post` }),
   follow: (name) => ({ title: 'New follower', body: `${name} started following you` }),
+  message: (name) => ({ title: name, body: 'Sent you a message' }),
 };
 
 const stringifyData = (data = {}) => {
@@ -61,6 +62,7 @@ const formatNotification = (notification) => ({
   actor: formatActor(notification.actor),
   post: notification.post ? { _id: toId(notification.post) } : null,
   comment: notification.comment ? { _id: toId(notification.comment) } : null,
+  conversationId: notification.conversationId || null,
 });
 
 /**
@@ -124,7 +126,14 @@ const sendPushToUser = async (userId, { title, body, data = {} }) => {
   }
 };
 
-const persistNotification = async ({ recipientId, actorId, type, postId, commentId }) => {
+const persistNotification = async ({
+  recipientId,
+  actorId,
+  type,
+  postId,
+  commentId,
+  conversationId,
+}) => {
   if (type === 'like' && postId) {
     return Notification.findOneAndUpdate(
       { recipient: recipientId, actor: actorId, type: 'like', post: postId },
@@ -147,6 +156,7 @@ const persistNotification = async ({ recipientId, actorId, type, postId, comment
     type,
     post: postId || null,
     comment: commentId || null,
+    conversationId: conversationId || null,
   });
 };
 
@@ -165,13 +175,22 @@ const sendPushForNotification = async (notification) => {
       type: notification.type,
       notificationId: notification._id,
       actorUsername: actor?.username || '',
+      senderId: notification.actor || undefined,
+      conversationId: notification.conversationId || undefined,
       postId: notification.post || undefined,
       commentId: notification.comment || undefined,
     },
   });
 };
 
-const createAndNotify = async ({ recipientId, actorId, type, postId, commentId }) => {
+const createAndNotify = async ({
+  recipientId,
+  actorId,
+  type,
+  postId,
+  commentId,
+  conversationId,
+}) => {
   try {
     if (!recipientId || !actorId || !type) {
       return null;
@@ -187,6 +206,7 @@ const createAndNotify = async ({ recipientId, actorId, type, postId, commentId }
       type,
       postId,
       commentId,
+      conversationId,
     });
 
     if (!notification) {

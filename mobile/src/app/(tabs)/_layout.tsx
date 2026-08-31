@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useNotifications } from '@/context/NotificationContext';
+import { useMessaging } from '@/hooks/useMessaging';
 
 export default function TabsLayout() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function TabsLayout() {
   const { isPreviewMode } = usePreview();
   const { isDesktop } = useResponsive();
   const { unreadCount } = useNotifications();
+  const { totalUnreadCount: messagesUnreadCount } = useMessaging();
   const profileUsername = isPreviewMode ? 'nexus' : user?.username;
 
   if (isLoading) {
@@ -76,6 +78,17 @@ export default function TabsLayout() {
           tabBarBadgeStyle: { backgroundColor: colors.error },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="notifications-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: 'Messages',
+          tabBarBadge: messagesUnreadCount > 0 ? messagesUnreadCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.error },
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles-outline" size={size} color={color} />
           ),
         }}
       />

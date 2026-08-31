@@ -1,6 +1,5 @@
 import React, { memo, useCallback } from 'react';
 import { View, StyleSheet, Pressable, Share } from 'react-native';
-import * as Linking from 'expo-linking';
 import { GlassCard, Avatar, Typography } from '@/components/ui';
 import { LikeButton } from './LikeButton';
 import { CommentButton } from './CommentButton';
@@ -8,6 +7,7 @@ import { PostOptionsMenu } from './PostOptionsMenu';
 import { Post } from '@/services/post.service';
 import { spacing } from '@/theme/spacing';
 import { formatTimeAgo } from '@/utils/format';
+import { getPostShareUrl } from '@/utils/postShare';
 import { useRouter } from 'expo-router';
 import { IconButton } from '@/components/ui/IconButton';
 
@@ -20,10 +20,6 @@ type Props = {
 const FEED_ACTION_COLOR = 'rgba(255, 255, 255, 0.55)';
 const FEED_META_COLOR = 'rgba(255, 255, 255, 0.45)';
 const FEED_CONTENT_COLOR = 'rgba(255, 255, 255, 0.88)';
-
-export function getPostShareUrl(postId: string): string {
-  return Linking.createURL(`/post/${postId}`);
-}
 
 export const PostCard = memo(function PostCard({ post, onLike, onComment }: Props) {
   const router = useRouter();

@@ -10,6 +10,7 @@ import { spacing } from '@/theme/spacing';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
 import { useNotifications } from '@/context/NotificationContext';
+import { useMessaging } from '@/hooks/useMessaging';
 
 type NavItem = {
   label: string;
@@ -28,6 +29,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: 'notifications-outline',
     segment: 'notifications',
   },
+  {
+    label: 'Messages',
+    href: '/(tabs)/messages',
+    icon: 'chatbubbles-outline',
+    segment: 'messages',
+  },
   { label: 'Profile', href: '/(tabs)/profile', icon: 'person-outline', segment: 'profile' },
 ];
 
@@ -38,6 +45,7 @@ export function DesktopSidebar() {
   const { logout, isAuthenticated, user } = useAuth();
   const { isPreviewMode, exitPreview } = usePreview();
   const { unreadCount } = useNotifications();
+  const { totalUnreadCount: messagesUnreadCount } = useMessaging();
   const profileUsername = isPreviewMode ? 'nexus' : user?.username;
 
   const handleLogout = async () => {
@@ -84,6 +92,9 @@ export function DesktopSidebar() {
               </Typography>
               {item.segment === 'notifications' && unreadCount > 0 ? (
                 <Badge count={unreadCount} />
+              ) : null}
+              {item.segment === 'messages' && messagesUnreadCount > 0 ? (
+                <Badge count={messagesUnreadCount} />
               ) : null}
             </Pressable>
           );
