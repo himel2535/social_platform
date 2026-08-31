@@ -2,49 +2,41 @@ import { Post } from '@/services/post.service';
 
 type FeedPostCreatedListener = (post: Post) => void;
 type CommentsCountListener = (postId: string, commentsCount: number) => void;
+type FeedPostDeletedListener = (postId: string) => void;
 
-let feedPostCreatedListener: FeedPostCreatedListener | null = null;
-let commentsCountListener: CommentsCountListener | null = null;
+const feedPostCreatedListeners = new Set<FeedPostCreatedListener>();
+const commentsCountListeners = new Set<CommentsCountListener>();
+const postDeletedListeners = new Set<FeedPostDeletedListener>();
 
 export function subscribeFeedPostCreated(callback: FeedPostCreatedListener): () => void {
-  feedPostCreatedListener = callback;
+  feedPostCreatedListeners.add(callback);
   return () => {
-    if (feedPostCreatedListener === callback) {
-      feedPostCreatedListener = null;
-    }
+    feedPostCreatedListeners.delete(callback);
   };
 }
 
 export function notifyFeedPostCreated(post: Post): void {
-  feedPostCreatedListener?.(post);
+  feedPostCreatedListeners.forEach((callback) => callback(post));
 }
 
 export function subscribePostCommentsCountUpdated(callback: CommentsCountListener): () => void {
-  commentsCountListener = callback;
+  commentsCountListeners.add(callback);
   return () => {
-    if (commentsCountListener === callback) {
-      commentsCountListener = null;
-    }
+    commentsCountListeners.delete(callback);
   };
 }
 
 export function notifyPostCommentsCountUpdated(postId: string, commentsCount: number): void {
-  commentsCountListener?.(postId, commentsCount);
+  commentsCountListeners.forEach((callback) => callback(postId, commentsCount));
 }
 
-type FeedPostDeletedListener = (postId: string) => void;
-
-let feedPostDeletedListener: FeedPostDeletedListener | null = null;
-
 export function subscribePostDeleted(callback: FeedPostDeletedListener): () => void {
-  feedPostDeletedListener = callback;
+  postDeletedListeners.add(callback);
   return () => {
-    if (feedPostDeletedListener === callback) {
-      feedPostDeletedListener = null;
-    }
+    postDeletedListeners.delete(callback);
   };
 }
 
 export function notifyPostDeleted(postId: string): void {
-  feedPostDeletedListener?.(postId);
+  postDeletedListeners.forEach((callback) => callback(postId));
 }

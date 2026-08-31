@@ -18,7 +18,7 @@ export function BrandTitle({ iconSize = 28, gap = 8, style, showText = true }: P
     <View style={[styles.container, { gap }, style]}>
       <Image
         source={LOGO_SOURCE}
-        style={{ width: iconSize, height: iconSize }}
+        style={{ width: iconSize, height: iconSize, marginTop: 2 }}
         contentFit="contain"
         accessibilityLabel={`${APP_NAME} logo`}
       />

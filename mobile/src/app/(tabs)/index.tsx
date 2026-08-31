@@ -287,7 +287,7 @@ export default function FeedScreen() {
           message="Create the first post!"
           icon="newspaper-outline"
           actionLabel="Create Post"
-          onAction={() => router.push('/(tabs)/create')}
+          onAction={() => router.push('/create')}
         />
       );
     }

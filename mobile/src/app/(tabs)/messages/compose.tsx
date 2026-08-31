@@ -35,7 +35,7 @@ function mergeUsers(followers: UserProfile[], following: UserProfile[], selfId: 
 
 export default function ComposeMessageScreen() {
   const router = useRouter();
-  const goBack = useSafeBack('/(tabs)/messages');
+  const goBack = useSafeBack('/messages');
   const { user } = useAuth();
   const { isPreviewMode } = usePreview();
 

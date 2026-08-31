@@ -93,6 +93,12 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="post"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         listeners={{
           tabPress: (e) => {

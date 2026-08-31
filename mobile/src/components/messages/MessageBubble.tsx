@@ -3,9 +3,12 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography } from '@/components/ui';
+import { SharedPostBubble } from '@/components/messages/SharedPostBubble';
 import { feedGlass } from '@/theme/glass';
 import { spacing } from '@/theme/spacing';
 import { colors } from '@/theme/colors';
+
+export type MessageType = 'text' | 'shared_post';
 
 export type DisplayMessage = {
   _id: string;
@@ -14,6 +17,8 @@ export type DisplayMessage = {
   readAt?: string | null;
   isOwn: boolean;
   pending?: boolean;
+  type?: MessageType;
+  postId?: string | null;
 };
 
 type Props = {
@@ -22,6 +27,16 @@ type Props = {
 };
 
 export function MessageBubble({ message, groupedWithPrevious = false }: Props) {
+  if (message.type === 'shared_post' && message.postId) {
+    return (
+      <SharedPostBubble
+        postId={message.postId}
+        isOwn={message.isOwn}
+        groupedWithPrevious={groupedWithPrevious}
+      />
+    );
+  }
+
   const { isOwn, text, readAt, pending } = message;
 
   const statusIcon =

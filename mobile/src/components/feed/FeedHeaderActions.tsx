@@ -24,7 +24,7 @@ export function FeedHeaderActions({ showMenu }: Props) {
         <IconButton
           icon="notifications-outline"
           accessibilityLabel="Notifications"
-          onPress={() => router.push('/(tabs)/notifications')}
+          onPress={() => router.push('/notifications')}
         />
         {unreadCount > 0 ? <Badge count={unreadCount} style={styles.badge} /> : null}
       </View>

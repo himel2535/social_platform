@@ -25,6 +25,7 @@ import { Message, messageService } from '@/services/message.service';
 import { buildConversationId } from '@/utils/buildConversationId';
 import { buildThreadItems, ThreadItem } from '@/utils/messageList';
 import { spacing } from '@/theme/spacing';
+import { layout } from '@/theme/glass';
 import { colors } from '@/theme/colors';
 import { useSafeBack } from '@/hooks/useSafeBack';
 import { ApiError } from '@/services/api';
@@ -53,7 +54,7 @@ export default function ConversationScreen() {
     username?: string;
     avatar?: string;
   }>();
-  const goBack = useSafeBack('/(tabs)/messages');
+  const goBack = useSafeBack('/messages');
   const { user } = useAuth();
   const { socket } = useSocket();
   const { conversations, registerActiveThread, upsertConversation, refreshConversations } =
@@ -234,6 +235,8 @@ export default function ConversationScreen() {
         readAt: message.readAt,
         isOwn: message.senderId === user?._id,
         pending: message.pending,
+        type: message.type,
+        postId: message.postId,
       })),
     [messages, user?._id],
   );
@@ -459,5 +462,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: spacing.md,
+    paddingBottom: layout.tabBarHeight,
   },
 });

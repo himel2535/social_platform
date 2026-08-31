@@ -1,9 +1,10 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { View, StyleSheet, Pressable, Share } from 'react-native';
 import { GlassCard, Avatar, Typography } from '@/components/ui';
 import { LikeButton } from './LikeButton';
 import { CommentButton } from './CommentButton';
 import { PostOptionsMenu } from './PostOptionsMenu';
+import { SharePostSheet } from './SharePostSheet';
 import { Post } from '@/services/post.service';
 import { spacing } from '@/theme/spacing';
 import { formatTimeAgo } from '@/utils/format';
@@ -23,6 +24,7 @@ const FEED_CONTENT_COLOR = 'rgba(255, 255, 255, 0.88)';
 
 export const PostCard = memo(function PostCard({ post, onLike, onComment }: Props) {
   const router = useRouter();
+  const [shareOpen, setShareOpen] = useState(false);
 
   const handlePostPress = () => {
     router.push(`/post/${post._id}`);
@@ -32,7 +34,7 @@ export const PostCard = memo(function PostCard({ post, onLike, onComment }: Prop
     router.push(`/profile/${post.author.username}`);
   };
 
-  const handleShare = useCallback(async () => {
+  const handleNativeShare = useCallback(async () => {
     const url = getPostShareUrl(post._id);
     try {
       await Share.share({ message: url, url });
@@ -44,71 +46,80 @@ export const PostCard = memo(function PostCard({ post, onLike, onComment }: Prop
   const actionCountStyle = styles.actionCount;
 
   return (
-    <GlassCard variant="feed" style={styles.card}>
-      <View style={styles.header}>
+    <>
+      <GlassCard variant="feed" style={styles.card}>
+        <View style={styles.header}>
+          <Pressable
+            style={styles.author}
+            onPress={handleAuthorPress}
+            accessibilityRole="button"
+            accessibilityLabel={`View profile for ${post.author.name}`}
+          >
+            <Avatar
+              name={post.author.name}
+              uri={post.author.avatar}
+              size={36}
+              shape="roundedSquare"
+            />
+            <View style={styles.authorInfo}>
+              <Typography variant="userName" style={styles.authorName}>
+                {post.author.name}
+              </Typography>
+              <Typography variant="username" style={styles.authorMeta}>
+                @{post.author.username} · {formatTimeAgo(post.createdAt)}
+              </Typography>
+            </View>
+          </Pressable>
+          <PostOptionsMenu post={post} />
+        </View>
+
         <Pressable
-          style={styles.author}
-          onPress={handleAuthorPress}
+          onPress={handlePostPress}
           accessibilityRole="button"
-          accessibilityLabel={`View profile for ${post.author.name}`}
+          accessibilityLabel="View post"
         >
-          <Avatar
-            name={post.author.name}
-            uri={post.author.avatar}
-            size={36}
-            shape="roundedSquare"
-          />
-          <View style={styles.authorInfo}>
-            <Typography variant="userName" style={styles.authorName}>
-              {post.author.name}
-            </Typography>
-            <Typography variant="username" style={styles.authorMeta}>
-              @{post.author.username} · {formatTimeAgo(post.createdAt)}
-            </Typography>
-          </View>
+          <Typography variant="postContent" style={styles.content}>
+            {post.content}
+          </Typography>
         </Pressable>
-        <PostOptionsMenu post={post} />
-      </View>
 
-      <Pressable
-        onPress={handlePostPress}
-        accessibilityRole="button"
-        accessibilityLabel="View post"
-      >
-        <Typography variant="postContent" style={styles.content}>
-          {post.content}
-        </Typography>
-      </Pressable>
+        <View style={styles.actions}>
+          <LikeButton
+            count={post.likesCount}
+            isLiked={post.likedByMe}
+            onPress={onLike}
+            iconColor={FEED_ACTION_COLOR}
+            likedIconColor="#5DCAA5"
+            iconSize={15}
+            countStyle={actionCountStyle}
+            compact
+          />
+          <CommentButton
+            count={post.commentsCount}
+            onPress={onComment || handlePostPress}
+            iconColor={FEED_ACTION_COLOR}
+            iconSize={15}
+            countStyle={actionCountStyle}
+            compact
+          />
+          <IconButton
+            icon="share-outline"
+            onPress={() => setShareOpen(true)}
+            color={FEED_ACTION_COLOR}
+            size={15}
+            accessibilityLabel="Share post"
+            style={styles.shareButton}
+          />
+        </View>
+      </GlassCard>
 
-      <View style={styles.actions}>
-        <LikeButton
-          count={post.likesCount}
-          isLiked={post.likedByMe}
-          onPress={onLike}
-          iconColor={FEED_ACTION_COLOR}
-          likedIconColor="#5DCAA5"
-          iconSize={15}
-          countStyle={actionCountStyle}
-          compact
-        />
-        <CommentButton
-          count={post.commentsCount}
-          onPress={onComment || handlePostPress}
-          iconColor={FEED_ACTION_COLOR}
-          iconSize={15}
-          countStyle={actionCountStyle}
-          compact
-        />
-        <IconButton
-          icon="share-outline"
-          onPress={handleShare}
-          color={FEED_ACTION_COLOR}
-          size={15}
-          accessibilityLabel="Share post"
-          style={styles.shareButton}
-        />
-      </View>
-    </GlassCard>
+      <SharePostSheet
+        visible={shareOpen}
+        post={post}
+        onClose={() => setShareOpen(false)}
+        onNativeShare={() => void handleNativeShare()}
+      />
+    </>
   );
 });
 

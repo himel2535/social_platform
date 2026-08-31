@@ -14,7 +14,11 @@ type Props = {
 
 export function ConversationListItem({ conversation, isTyping = false, onPress }: Props) {
   const { participant, lastMessage, lastMessageAt, unreadCount } = conversation;
-  const previewText = isTyping ? 'typing...' : lastMessage?.text || 'No messages yet';
+  const previewText = isTyping
+    ? 'typing...'
+    : lastMessage?.type === 'shared_post'
+      ? 'Shared a post'
+      : lastMessage?.text || 'No messages yet';
 
   return (
     <Pressable

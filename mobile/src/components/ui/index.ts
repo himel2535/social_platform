@@ -17,6 +17,7 @@ export { AppHeader } from './AppHeader';
 export { BrandTitle } from './BrandTitle';
 export { BottomSheet } from './BottomSheet';
 export { Modal } from './Modal';
+export { ConfirmDialog } from './ConfirmDialog';
 export { ToastProvider, useToast } from './Toast';
 export { KeyboardAwareContainer } from './KeyboardAwareContainer';
 export { Typography } from './Typography';

@@ -18,9 +18,10 @@ import { CommentSkeletonList } from '@/components/comments/CommentSkeleton';
 import { LikeButton } from '@/components/feed/LikeButton';
 import { CommentButton } from '@/components/feed/CommentButton';
 import { spacing } from '@/theme/spacing';
+import { layout } from '@/theme/glass';
 import { usePreview, getPreviewPost, getPreviewComments } from '@/preview';
 import { getCachedPost, updateCachedPostCommentsCount } from '@/utils/postCache';
-import { notifyPostCommentsCountUpdated } from '@/utils/feedEvents';
+import { notifyPostCommentsCountUpdated, subscribePostDeleted } from '@/utils/feedEvents';
 import { Post } from '@/services/post.service';
 import { Comment, commentService } from '@/services/comment.service';
 import { formatTimeAgo } from '@/utils/format';
@@ -98,6 +99,19 @@ export default function PostDetailScreen() {
       void loadComments();
     }
   }, [isPreviewMode, id, loadComments]);
+
+  useEffect(() => {
+    if (!id || isPreviewMode) {
+      return;
+    }
+
+    return subscribePostDeleted((deletedId) => {
+      if (deletedId === id) {
+        showToast('This post was deleted', 'info');
+        goBack();
+      }
+    });
+  }, [goBack, id, isPreviewMode, showToast]);
 
   const [likeOverrides, setLikeOverrides] = useState<
     Record<string, { likedByMe: boolean; likesCount: number }>
@@ -358,7 +372,7 @@ export default function PostDetailScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    paddingBottom: spacing.xxxl,
+    paddingBottom: layout.tabBarHeight + spacing.lg,
   },
   card: {
     marginBottom: spacing.lg,

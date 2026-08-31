@@ -67,3 +67,7 @@ export function syncPostsFromCache(setPosts: Dispatch<SetStateAction<Post[]>>): 
 export function clearPostCache(): void {
   cache.clear();
 }
+
+export function removeCachedPost(postId: string): void {
+  cache.delete(postId);
+}

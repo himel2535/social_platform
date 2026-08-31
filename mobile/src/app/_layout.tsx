@@ -41,20 +41,6 @@ export default function RootLayout() {
                     <Stack.Screen name="index" />
                     <Stack.Screen name="(auth)" />
                     <Stack.Screen name="(tabs)" />
-                    <Stack.Screen name="post/[id]" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="messages/compose" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="messages/[userId]" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="profile/[username]/index" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen
-                      name="profile/[username]/followers"
-                      options={{ animation: 'slide_from_right' }}
-                    />
-                    <Stack.Screen
-                      name="profile/[username]/following"
-                      options={{ animation: 'slide_from_right' }}
-                    />
-                    <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right' }} />
-                    <Stack.Screen name="search" options={{ animation: 'slide_from_right' }} />
                   </Stack>
                 </NotificationProvider>
               </MessagingProvider>

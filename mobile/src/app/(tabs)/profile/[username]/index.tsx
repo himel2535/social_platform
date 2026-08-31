@@ -327,7 +327,7 @@ export default function ProfileScreen() {
           }
           icon="newspaper-outline"
           actionLabel={isOwnProfile ? 'Create Post' : undefined}
-          onAction={isOwnProfile ? () => router.push('/(tabs)/create') : undefined}
+          onAction={isOwnProfile ? () => router.push('/create') : undefined}
         />
       );
     }

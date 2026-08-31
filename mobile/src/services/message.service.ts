@@ -7,12 +7,16 @@ export type MessageParticipant = {
   avatar?: string | null;
 };
 
+export type MessageType = 'text' | 'shared_post';
+
 export type Message = {
   _id: string;
   conversationId: string;
   senderId: string;
   receiverId: string;
+  type?: MessageType;
   text: string;
+  postId?: string | null;
   readAt: string | null;
   createdAt: string;
 };
@@ -21,6 +25,8 @@ export type LastMessage = {
   text: string;
   senderId: string;
   createdAt: string;
+  type?: MessageType;
+  postId?: string | null;
 };
 
 export type ConversationPreview = {

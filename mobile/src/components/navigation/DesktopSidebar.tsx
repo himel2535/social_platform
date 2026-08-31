@@ -21,21 +21,21 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', href: '/(tabs)', icon: 'home-outline', segment: 'index' },
-  { label: 'Search', href: '/(tabs)/search', icon: 'search-outline', segment: 'search' },
-  { label: 'Create', href: '/(tabs)/create', icon: 'add-circle-outline', segment: 'create' },
+  { label: 'Search', href: '/search', icon: 'search-outline', segment: 'search' },
+  { label: 'Create', href: '/create', icon: 'add-circle-outline', segment: 'create' },
   {
     label: 'Alerts',
-    href: '/(tabs)/notifications',
+    href: '/notifications',
     icon: 'notifications-outline',
     segment: 'notifications',
   },
   {
     label: 'Messages',
-    href: '/(tabs)/messages',
+    href: '/messages',
     icon: 'chatbubbles-outline',
     segment: 'messages',
   },
-  { label: 'Profile', href: '/(tabs)/profile', icon: 'person-outline', segment: 'profile' },
+  { label: 'Profile', href: '/profile', icon: 'person-outline', segment: 'profile' },
 ];
 
 export function DesktopSidebar() {
