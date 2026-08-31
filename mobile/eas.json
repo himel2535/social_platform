@@ -23,7 +23,8 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://social-platform-f13o.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://social-platform-f13o.onrender.com/api",
+        "GOOGLE_SERVICES_JSON": "@GOOGLE_SERVICES_JSON"
       },
       "android": {
         "buildType": "apk"
