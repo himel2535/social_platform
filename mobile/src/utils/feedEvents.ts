@@ -31,3 +31,20 @@ export function subscribePostCommentsCountUpdated(callback: CommentsCountListene
 export function notifyPostCommentsCountUpdated(postId: string, commentsCount: number): void {
   commentsCountListener?.(postId, commentsCount);
 }
+
+type FeedPostDeletedListener = (postId: string) => void;
+
+let feedPostDeletedListener: FeedPostDeletedListener | null = null;
+
+export function subscribePostDeleted(callback: FeedPostDeletedListener): () => void {
+  feedPostDeletedListener = callback;
+  return () => {
+    if (feedPostDeletedListener === callback) {
+      feedPostDeletedListener = null;
+    }
+  };
+}
+
+export function notifyPostDeleted(postId: string): void {
+  feedPostDeletedListener?.(postId);
+}

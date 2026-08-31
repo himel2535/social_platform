@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Typography } from './Typography';
+import { BrandTitle } from './BrandTitle';
 import { spacing } from '@/theme/spacing';
 
 type Props = {
@@ -8,15 +9,22 @@ type Props = {
   leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
   style?: ViewStyle;
+  showBrandIcon?: boolean;
 };
 
-export function AppHeader({ title, leftAction, rightAction, style }: Props) {
+export function AppHeader({ title, leftAction, rightAction, style, showBrandIcon }: Props) {
   return (
     <View style={[styles.container, style]}>
       <View style={styles.side}>{leftAction}</View>
-      <Typography variant="screenTitle" style={styles.title} numberOfLines={1}>
-        {title}
-      </Typography>
+      {showBrandIcon ? (
+        <View style={styles.brandTitle}>
+          <BrandTitle />
+        </View>
+      ) : (
+        <Typography variant="screenTitle" style={styles.title} numberOfLines={1}>
+          {title}
+        </Typography>
+      )}
       <View style={[styles.side, styles.right]}>{rightAction}</View>
     </View>
   );
@@ -41,5 +49,10 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 20,
+  },
+  brandTitle: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

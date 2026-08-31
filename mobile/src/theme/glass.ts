@@ -13,6 +13,16 @@ export const glass = {
   padding: spacing.lg,
 } as const;
 
+export const feedGlass = {
+  blurIntensity: 70,
+  backgroundColor: 'rgba(20, 22, 35, 0.55)',
+  borderColor: 'rgba(255, 255, 255, 0.06)',
+  borderWidth: 1,
+  borderRadius: 16,
+  padding: spacing.lg,
+  accentColor: 'rgba(93, 202, 165, 0.5)',
+} as const;
+
 export const shadows = {
   sm: {
     shadowColor: colors.background,

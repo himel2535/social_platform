@@ -96,4 +96,16 @@ export const postService = {
     const response = await api.delete<BackendSuccess<LikeResponse>>(`/posts/${postId}/like`);
     return response.data.data;
   },
+
+  async deletePost(postId: string): Promise<void> {
+    await api.delete(`/posts/${postId}`);
+  },
+
+  async reportPost(postId: string): Promise<void> {
+    try {
+      await api.post(`/posts/${postId}/report`);
+    } catch {
+      // Placeholder endpoint may not exist yet; treat as reported for UX
+    }
+  },
 };

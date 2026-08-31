@@ -26,7 +26,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { ApiError } from '@/services/api';
 import { normalizeApiError } from '@/utils/normalizeApiError';
 import { cachePost, cachePosts, syncPostsFromCache, updateCachedPostCommentsCount } from '@/utils/postCache';
-import { subscribeFeedPostCreated, subscribePostCommentsCountUpdated } from '@/utils/feedEvents';
+import { subscribeFeedPostCreated, subscribePostCommentsCountUpdated, subscribePostDeleted } from '@/utils/feedEvents';
 import { useToggleLike } from '@/hooks/useToggleLike';
 import { layout } from '@/theme/glass';
 
@@ -173,6 +173,12 @@ export default function FeedScreen() {
   }, []);
 
   useEffect(() => {
+    return subscribePostDeleted((postId) => {
+      setPosts((current) => current.filter((post) => post._id !== postId));
+    });
+  }, []);
+
+  useEffect(() => {
     if (isPreviewMode || activeTab !== 'index') {
       previousTabRef.current = activeTab;
       return;
@@ -245,6 +251,7 @@ export default function FeedScreen() {
       <View style={styles.listHeader}>
         <AppHeader
           title={APP_NAME}
+          showBrandIcon
           rightAction={
             <FeedHeaderActions showMenu={!isDesktop && (isAuthenticated || isPreviewMode)} />
           }

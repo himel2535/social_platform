@@ -173,10 +173,29 @@ const unlikePost = async (postId, userId) => {
   return { liked: false, likesCount: Math.max(0, existing.likesCount) };
 };
 
+const deletePost = async (postId, userId) => {
+  const Comment = require('../models/Comment');
+  const Notification = require('../models/Notification');
+
+  const post = await Post.findById(postId).select('author');
+  if (!post) {
+    throw new AppError('Post not found', 404);
+  }
+
+  if (post.author.toString() !== userId.toString()) {
+    throw new AppError('Forbidden', 403);
+  }
+
+  await Comment.deleteMany({ post: postId });
+  await Notification.deleteMany({ post: postId });
+  await Post.findByIdAndDelete(postId);
+};
+
 module.exports = {
   createPost,
   getPosts,
   getPostsByUsername,
   likePost,
   unlikePost,
+  deletePost,
 };

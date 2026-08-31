@@ -1,18 +1,29 @@
-import React, { memo } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
-import { GlassCard, Avatar, Typography, IconButton } from '@/components/ui';
+import React, { memo, useCallback } from 'react';
+import { View, StyleSheet, Pressable, Share } from 'react-native';
+import * as Linking from 'expo-linking';
+import { GlassCard, Avatar, Typography } from '@/components/ui';
 import { LikeButton } from './LikeButton';
 import { CommentButton } from './CommentButton';
+import { PostOptionsMenu } from './PostOptionsMenu';
 import { Post } from '@/services/post.service';
 import { spacing } from '@/theme/spacing';
 import { formatTimeAgo } from '@/utils/format';
 import { useRouter } from 'expo-router';
+import { IconButton } from '@/components/ui/IconButton';
 
 type Props = {
   post: Post;
   onLike?: () => void;
   onComment?: () => void;
 };
+
+const FEED_ACTION_COLOR = 'rgba(255, 255, 255, 0.55)';
+const FEED_META_COLOR = 'rgba(255, 255, 255, 0.45)';
+const FEED_CONTENT_COLOR = 'rgba(255, 255, 255, 0.88)';
+
+export function getPostShareUrl(postId: string): string {
+  return Linking.createURL(`/post/${postId}`);
+}
 
 export const PostCard = memo(function PostCard({ post, onLike, onComment }: Props) {
   const router = useRouter();
@@ -25,8 +36,19 @@ export const PostCard = memo(function PostCard({ post, onLike, onComment }: Prop
     router.push(`/profile/${post.author.username}`);
   };
 
+  const handleShare = useCallback(async () => {
+    const url = getPostShareUrl(post._id);
+    try {
+      await Share.share({ message: url, url });
+    } catch {
+      // User dismissed share sheet
+    }
+  }, [post._id]);
+
+  const actionCountStyle = styles.actionCount;
+
   return (
-    <GlassCard style={styles.card}>
+    <GlassCard variant="feed" style={styles.card}>
       <View style={styles.header}>
         <Pressable
           style={styles.author}
@@ -34,17 +56,22 @@ export const PostCard = memo(function PostCard({ post, onLike, onComment }: Prop
           accessibilityRole="button"
           accessibilityLabel={`View profile for ${post.author.name}`}
         >
-          <Avatar name={post.author.name} uri={post.author.avatar} size={40} />
+          <Avatar
+            name={post.author.name}
+            uri={post.author.avatar}
+            size={36}
+            shape="roundedSquare"
+          />
           <View style={styles.authorInfo}>
-            <Typography variant="userName">{post.author.name}</Typography>
-            <Typography variant="username">@{post.author.username}</Typography>
+            <Typography variant="userName" style={styles.authorName}>
+              {post.author.name}
+            </Typography>
+            <Typography variant="username" style={styles.authorMeta}>
+              @{post.author.username} · {formatTimeAgo(post.createdAt)}
+            </Typography>
           </View>
         </Pressable>
-        <IconButton
-          icon="ellipsis-horizontal"
-          accessibilityLabel="Post options"
-          onPress={() => {}}
-        />
+        <PostOptionsMenu post={post} />
       </View>
 
       <Pressable
@@ -55,15 +82,35 @@ export const PostCard = memo(function PostCard({ post, onLike, onComment }: Prop
         <Typography variant="postContent" style={styles.content}>
           {post.content}
         </Typography>
-
-        <Typography variant="metadata" style={styles.time}>
-          {formatTimeAgo(post.createdAt)}
-        </Typography>
       </Pressable>
 
       <View style={styles.actions}>
-        <LikeButton count={post.likesCount} isLiked={post.likedByMe} onPress={onLike} />
-        <CommentButton count={post.commentsCount} onPress={onComment || handlePostPress} />
+        <LikeButton
+          count={post.likesCount}
+          isLiked={post.likedByMe}
+          onPress={onLike}
+          iconColor={FEED_ACTION_COLOR}
+          likedIconColor="#5DCAA5"
+          iconSize={15}
+          countStyle={actionCountStyle}
+          compact
+        />
+        <CommentButton
+          count={post.commentsCount}
+          onPress={onComment || handlePostPress}
+          iconColor={FEED_ACTION_COLOR}
+          iconSize={15}
+          countStyle={actionCountStyle}
+          compact
+        />
+        <IconButton
+          icon="share-outline"
+          onPress={handleShare}
+          color={FEED_ACTION_COLOR}
+          size={15}
+          accessibilityLabel="Share post"
+          style={styles.shareButton}
+        />
       </View>
     </GlassCard>
   );
@@ -82,20 +129,40 @@ const styles = StyleSheet.create({
   author: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     flex: 1,
   },
   authorInfo: {
     flex: 1,
+    gap: 2,
+  },
+  authorName: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '500',
+  },
+  authorMeta: {
+    color: FEED_META_COLOR,
+    fontSize: 11,
   },
   content: {
-    marginBottom: spacing.sm,
-  },
-  time: {
+    color: FEED_CONTENT_COLOR,
+    fontSize: 13.5,
+    lineHeight: 21,
     marginBottom: spacing.md,
   },
   actions: {
     flexDirection: 'row',
-    gap: spacing.xl,
+    alignItems: 'center',
+    gap: 10,
+  },
+  actionCount: {
+    color: FEED_ACTION_COLOR,
+    fontSize: 12,
+  },
+  shareButton: {
+    marginLeft: 'auto',
+    width: 36,
+    height: 36,
   },
 });

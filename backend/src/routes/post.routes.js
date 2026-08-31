@@ -35,5 +35,6 @@ router.post(
 );
 router.post('/:id/like', protect, postIdRules, validate, postController.likePost);
 router.delete('/:id/like', protect, postIdRules, validate, postController.unlikePost);
+router.delete('/:id', protect, postIdRules, validate, postController.deletePost);
 
 module.exports = router;

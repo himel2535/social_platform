@@ -31,9 +31,16 @@ const unlikePost = asyncHandler(async (req, res) => {
   sendSuccess(res, 200, 'Post unliked', result);
 });
 
+const deletePost = asyncHandler(async (req, res) => {
+  await postService.deletePost(req.params.id, req.user._id);
+
+  sendSuccess(res, 200, 'Post deleted successfully');
+});
+
 module.exports = {
   createPost,
   getPosts,
   likePost,
   unlikePost,
+  deletePost,
 };

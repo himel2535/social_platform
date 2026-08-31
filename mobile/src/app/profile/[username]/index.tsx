@@ -34,6 +34,7 @@ import {
   setCachedUserPosts,
   subscribeProfileUpdates,
 } from '@/utils/profileCache';
+import { subscribePostDeleted } from '@/utils/feedEvents';
 
 function formatMemberSince(date?: string): string {
   if (!date) {
@@ -163,6 +164,12 @@ export default function ProfileScreen() {
       }
     });
   }, [username, isPreviewMode, loadPosts]);
+
+  useEffect(() => {
+    return subscribePostDeleted((postId) => {
+      setPosts((current) => current.filter((post) => post._id !== postId));
+    });
+  }, []);
 
   const isOwnProfile =
     profile &&

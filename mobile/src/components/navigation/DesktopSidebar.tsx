@@ -2,12 +2,11 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Badge, Typography } from '@/components/ui';
+import { Badge, Typography, BrandTitle } from '@/components/ui';
 import { AccountMenu } from '@/components/navigation/AccountMenu';
 import { colors } from '@/theme/colors';
 import { glass, layout } from '@/theme/glass';
 import { spacing } from '@/theme/spacing';
-import { APP_NAME } from '@/constants/branding';
 import { useAuth } from '@/hooks/useAuth';
 import { usePreview } from '@/preview';
 import { useNotifications } from '@/context/NotificationContext';
@@ -53,9 +52,7 @@ export function DesktopSidebar() {
 
   return (
     <View style={styles.sidebar}>
-      <Typography variant="screenTitle" style={styles.brand}>
-        {APP_NAME}
-      </Typography>
+      <BrandTitle style={styles.brand} />
 
       <View style={styles.nav}>
         {NAV_ITEMS.map((item) => {

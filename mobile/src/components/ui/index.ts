@@ -14,6 +14,7 @@ export { LoadingSkeleton } from './LoadingSkeleton';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { AppHeader } from './AppHeader';
+export { BrandTitle } from './BrandTitle';
 export { BottomSheet } from './BottomSheet';
 export { Modal } from './Modal';
 export { ToastProvider, useToast } from './Toast';
