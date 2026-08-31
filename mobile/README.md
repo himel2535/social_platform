@@ -1,56 +1,169 @@
-# Welcome to your Expo app 👋
+# TechZugram Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+React Native + Expo mobile app for [TechZugram](../README.md) — a social feed with real-time messaging, push notifications, and a dark glassmorphism UI.
 
-## Get started
+## Prerequisites
 
-1. Install dependencies
+- Node.js 18+
+- npm
+- [Expo Go](https://expo.dev/go) or an EAS development build (required for push notifications)
+- Running backend (local or deployed on Render)
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Setup
 
 ```bash
-npm run reset-project
+cd mobile
+npm install
+cp .env.example .env
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Configure `EXPO_PUBLIC_API_URL` in `.env` (see [Environment Variables](#environment-variables)).
 
-### Other setup steps
+Start the dev server:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npx expo start
+```
 
-## Learn more
+From the repo root:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm run mobile:start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Platform notes
 
-## Join the community
+| Platform | How to run | API URL |
+|----------|------------|---------|
+| iOS Simulator | Press `i` in Expo CLI | `http://localhost:5000/api` |
+| Android Emulator | Press `a` in Expo CLI | `http://10.0.2.2:5000/api` |
+| Physical device | Scan QR code (same Wi-Fi) | `http://<YOUR_LAN_IP>:5000/api` |
+| Web | Press `w` in Expo CLI | `http://localhost:5000/api` |
 
-Join our community of developers creating universal apps.
+For local overrides without editing `.env`, create `mobile/.env.local`:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+# iOS simulator / web
+EXPO_PUBLIC_API_URL=http://localhost:5000/api
+
+# Android emulator
+EXPO_PUBLIC_API_URL=http://10.0.2.2:5000/api
+
+# Physical device (replace with your machine's LAN IP)
+EXPO_PUBLIC_API_URL=http://192.168.1.100:5000/api
+```
+
+The Socket.io URL is derived automatically from `EXPO_PUBLIC_API_URL` by removing the `/api` suffix.
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `EXPO_PUBLIC_API_URL` | Yes | Backend REST API base URL including `/api` |
+
+Default in `.env.example` points to production:
+
+```
+EXPO_PUBLIC_API_URL=https://social-platform-f13o.onrender.com/api
+```
+
+Never commit real secrets. Only `EXPO_PUBLIC_*` vars are embedded in the client bundle.
+
+## Project Structure
+
+```
+mobile/
+├── app/                        # Expo Router screens
+│   ├── _layout.tsx             # Root providers + stack
+│   ├── index.tsx               # Auth redirect
+│   ├── (auth)/                 # Login, signup
+│   └── (tabs)/                 # Bottom tab navigator
+│       ├── index.tsx           # Feed
+│       ├── search.tsx          # User search
+│       ├── create.tsx          # New post
+│       ├── notifications.tsx   # Alerts inbox
+│       ├── messages/           # Messaging stack (inbox, compose, thread)
+│       ├── post/               # Post detail (hidden from tab bar)
+│       └── profile/            # Profile, followers, edit
+├── src/
+│   ├── components/
+│   │   ├── ui/                 # GlassCard, Toast, ConfirmDialog, etc.
+│   │   ├── feed/               # PostCard, SearchBar, SharePostSheet
+│   │   ├── messages/           # MessageBubble, ConversationListItem
+│   │   ├── comments/           # CommentItem, CommentInput
+│   │   └── navigation/         # DesktopSidebar, SplashScreenController
+│   ├── context/                # Auth, Socket, Messaging, Notifications
+│   ├── hooks/                  # useAuth, useSocket, useMessaging, usePushNotifications
+│   ├── services/               # API clients (auth, posts, messages, notifications)
+│   ├── theme/                  # colors, glass tokens, spacing, typography
+│   └── utils/                  # feedEvents, postCache, messageList
+├── assets/                     # App icon, splash, branding images
+├── app.json                    # Expo config (TechZugram branding)
+└── eas.json                    # EAS Build profiles
+```
+
+## Features (Mobile)
+
+- **Feed:** paginated posts, username filter, glass cards, skeleton loaders
+- **Interactions:** like, comment, share (in-app + native), delete with confirm modal
+- **Messaging:** inbox, threads, typing indicators, read receipts, shared post previews
+- **Notifications:** in-app list, unread badges, FCM push with tap navigation
+- **Profile:** view/edit, followers/following, user search
+- **UI:** dark glass theme, sticky bottom tabs on all nested screens, desktop sidebar
+
+## Push Notifications
+
+Push requires a **development build** or **production APK** — Expo Go does not support real FCM.
+
+1. Add `google-services.json` to the project (do not commit)
+2. Configure Firebase in EAS credentials
+3. Build with EAS (see below)
+4. Backend must have `FIREBASE_*` env vars set
+
+The app registers the FCM token on login via `POST /api/notifications/device-token`.
+
+## Build APK (EAS)
+
+Install EAS CLI and log in:
+
+```bash
+npm install -g eas-cli
+eas login
+```
+
+Build profiles in `eas.json`:
+
+| Profile | Use case | API URL |
+|---------|----------|---------|
+| `development` | Dev client with debugging | Local (configure manually) |
+| `preview` | Internal testing APK | Render production API |
+| `production` | Release APK | Render production API |
+
+```bash
+# Production APK
+eas build --platform android --profile production
+
+# Preview / internal testing
+eas build --platform android --profile preview
+```
+
+Download the APK from the EAS dashboard when the build completes.
+
+## Development Tips
+
+- **Preview mode:** In `__DEV__`, use DevPreviewControls to browse UI with mock data without a backend
+- **TypeScript:** Run `npx tsc --noEmit` to type-check
+- **Lint:** Run `npm run lint`
+
+## API & Socket Documentation
+
+REST endpoints and Socket.io events are documented in:
+
+- [Root README](../README.md) — overview and endpoint tables
+- [Backend README](../backend/README.md) — detailed curl examples and payload shapes
+
+## Deployment
+
+- Mobile builds are produced via **EAS Build** (not committed to the repo)
+- Backend is deployed on **Render** and auto-deploys on push to `main`
+- Production API: `https://social-platform-f13o.onrender.com/api`
